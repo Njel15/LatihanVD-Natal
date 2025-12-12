@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulator Multicam (Custom Links - No Lag)</title>
+    <style>
+        /* --- General Styling --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #1a1a1a; 
+            color: #f0f0f0;
+            padding: 20px;
+        }
+        h1 {
+            color: #00bcd4;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        p.subtitle {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #aaa;
+        }
+        
+        /* --- Main Layout --- */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        /* --- Global Media Upload & Controls Area --- */
+        .global-media-section {
+            padding: 15px;
+            background-color: #2c2c2c;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .controls-section {
+            margin-top: 10px;
+        }
+        .controls-section button {
+            margin: 5px 10px;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #play-button { background-color: #28a745; color: white; }
+        #reset-button { background-color: #dc3545; color: white; }
+        #time-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00bcd4;
+            margin-left: 15px;
+        }
+        #music-status {
+            font-style: italic;
+            color: #aaa;
+            margin-top: 10px;
+        }
+
+        /* --- Program Monitor --- */
+        .monitor-area {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+        .monitor {
+            background-color: #000;
+            border: 5px solid #ff0000;
+            height: 450px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+        
+        .monitor-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: #ff0000;
+            color: white;
+            padding: 2px 8px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 10;
+        }
+        
+        /* --- Program Visualizer --- */
+        .visualizer-content {
+            width: 100%;
+            height: 100%;
+            background-color: #333; 
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Media Display */
+        #program-media {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+            display: none;
+            background-color: black; 
+        }
+        
+        /* Teks Deskripsi CAM */
+        #program-text {
+            color: #fff;
+            position: absolute;
+            font-size: 20px;
+            top: 10px;
+            z-index: 5;
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+            background-color: rgba(0,0,0,0.5); /* Background transparan */
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        
+        /* --- LOG OVERLAY (CENTER BOTTOM) --- */
+        #log-overlay {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%); 
+            background-color: rgba(0,0,0,0.7); 
+            color: yellow;
+            padding: 5px 10px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            z-index: 20;
+            display: none; 
+            white-space: nowrap; 
+            text-shadow: 0 0 5px rgba(0,0,0,0.8);
+        }
+
+        /* --- Video Feeds (Multiview Grid) --- */
+        .video-feed-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            background-color: #2c2c2c;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .camera-wrapper {
+            position: relative;
+            padding-top: 20px; 
+        }
+        .camera-preview {
+            border: 2px solid #555; 
+            height: 120px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #000;
+            position: relative;
+            cursor: pointer;
+            transition: border-color 0.1s;
+            padding-bottom: 25px; 
+            background-size: cover;
+            background-position: center;
+        }
+        .camera-preview.program { border: 4px solid #ff0000; }
+        
+        .camera-preview .cut-button {
+            display: block; 
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 3px 0;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        /* CAM ID Label (di atas kotak) */
+        .cam-id-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: #2c2c2c; 
+            color: white;
+            padding: 0 5px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 5;
+            white-space: nowrap;
+        }
+        .cam-id-label.program {
+            background-color: #ff0000; 
+        }
+
+        .camera-content {
+            flex-grow: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            padding: 3px;
+            box-sizing: border-box;
+            color: #fff;
+            height: 100%; 
+            position: relative;
+            text-shadow: 1px 1px 2px black;
+            background-color: rgba(0,0,0,0.3);
+        }
+        
+        .cam-desc {
+            font-size: 10px;
+            text-align: center;
+            line-height: 1.2;
+            color: #ddd;
+        }
+        
+        /* --- Log Section (Di Bawah) --- */
+        .log-section {
+            background-color: #2c2c2c;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        #log-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #3a3a3a;
+            color: #f0f0f0;
+            margin-top: 10px;
+        }
+        #log-table th, #log-table td {
+            border: 1px solid #444;
+            padding: 6px;
+            text-align: left;
+            font-size: 12px;
+        }
+        #log-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>LATIHAN VD</h1>
+    <p class="subtitle">Christmas 2025.</p>
+
+    <div class="main-container">
+        
+        <div class="global-media-section">
+            <input type="file" id="global-media-input" accept="audio/*,video/*">
+            <p id="music-status">Upload file audio/video untuk mengaktifkan timer dan *play/pause*.</p>
+        
+            <div class="controls-section">
+                <button id="play-button" onclick="togglePlayPause()">START/PAUSE</button>
+                <button id="reset-button" onclick="resetSimulator()">RESET ALL</button>
+                <span id="time-display">0.00</span>
+            </div>
+        </div>
+
+        <div class="monitor-area">
+            <div id="program-monitor" class="monitor">
+                <div class="monitor-label">PROGRAM (LIVE)</div>
+                <div id="program-output" class="visualizer-content">
+                    
+                    <img id="program-media" alt="Camera Feed">
+
+                    <span id="program-text">CAM 1: MS CU CENTER STAGE - 1 ORANG</span>
+                    
+                    <div id="log-overlay">SIAP! Tekan START/PAUSE dan CUT.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="video-feed-container" id="multiview-container">
+            </div>
+
+        <div class="log-section">
+            <h2>LOG SWITCHING (Record)</h2>
+            <table id="log-table">
+                <thead>
+                    <tr>
+                        <th>Waktu (s)</th>
+                        <th>CAM Dipilih</th>
+                        <th>Deskripsi</th>
+                    </tr>
+                </thead>
+                <tbody id="log-body">
+                    </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <div id="preload-area" style="display:none; width:1px; height:1px; overflow:hidden;"></div>
+
+    <script>
+        // Mapping Hotkeys: 1-9, 0, -, =
+        const hotkeyMap = {
+            '1': 1, '2': 2, '3': 3, '4': 4, '5': 5,
+            '6': 6, '7': 7, '8': 8, '9': 9,
+            '0': 10, '-': 11, '=': 12
+        };
+
+        // Data Setup Kamera
+        const cameras = [
+            { id: 1, desc: 'MS CU CENTER STAGE - 1 ORANG', key: '1' },
+            { id: 2, desc: 'MS WIDE CENTER STAGE - 8 ORANG', key: '2' },
+            { id: 3, desc: 'TRIPOD SERONG KIRI - SINGER', key: '3' },
+            { id: 4, desc: 'TRIPOD SERONG KANAN - SINGER', key: '4' },
+            { id: 5, desc: 'Gimbal STAGE KIRI - MUSIK WIDE', key: '5' },
+            { id: 6, desc: 'GB STAGE KANAN - ORCHESTRA', key: '6' },
+            { id: 7, desc: 'Monopod KIRI - SINGER CU LOW', key: '7' },
+            { id: 8, desc: 'Monopod KANAN - SINGER CU LOW', key: '8' },
+            { id: 9, desc: 'JJP KANAN - WIDE CROWD', key: '9' },
+            { id: 10, desc: 'Gimbal BAWAH STAGE - LOW ANGLE', key: '0' },
+            { id: 11, desc: 'Gimbal BELAKANG - CROWD WIDE', key: '-' },
+            { id: 12, desc: 'DRONE - BIRD EYE WIDE CROWD', key: '=' },
+        ];
+        
+        // URL Gambar (UPDATED sesuai request)
+        const permanentImageLinks = [
+            null, 
+            'https://lh3.googleusercontent.com/d/1E0fArQyTj5-glGLuHX3e4oBvhtt89Sdr',  // CAM 1
+            'https://lh3.googleusercontent.com/d/1gwkjJhGwzUaPVeXYAx9B-ahuock1ADEc',  // CAM 2
+            'https://lh3.googleusercontent.com/d/1OPd_EDyH_vGdW3IIg7kJGRyXi-qkpf_I',  // CAM 3
+            'https://lh3.googleusercontent.com/d/1TOpM_QQXXhthrsipcufW2OeaK-R2INbw',  // CAM 4
+            'https://lh3.googleusercontent.com/d/1zlHD06ZsMB_X5JH0crowfAUgykrKTSac', // CAM 5
+            'https://lh3.googleusercontent.com/d/1au687zM0rQNZYcpKfoHzV9JEPMgiLVgL',  // CAM 6
+            'https://lh3.googleusercontent.com/d/1elVb-9JbqJYLA6LFFGnt0nBqrQA3YmdU',  // CAM 7
+            'https://lh3.googleusercontent.com/d/1pnNpJIksdj0bQlyYsTOX0ernd-ykorlA',  // CAM 8
+            'https://lh3.googleusercontent.com/d/11AkJcLClgMnrl7DDTyqFrz1PXph0RkYi',  // CAM 9
+            'https://lh3.googleusercontent.com/d/1rRKlhYLoH1SjWYTNS89OpU54oQuIsmJS',  // CAM 10
+            'https://lh3.googleusercontent.com/d/1p2Ks-6Mq_zb2duKZCvNXCHPyssKMnpYc', // CAM 11
+            'https://lh3.googleusercontent.com/d/1togOa6ZS17EQJJXO6ypIMG3gh64i1PjO', // CAM 12
+        ];
+
+        let camImageUrls = [...permanentImageLinks]; 
+        let globalMediaFile = null; 
+        
+        let programCamId = 1; 
+        let isRunning = false;
+        let intervalTimer = null;
+        let startTime = 0; 
+        
+        const audio = new Audio(); 
+        
+        // Elemen Output
+        const programMonitor = document.getElementById('program-monitor');
+        const programMedia = document.getElementById('program-media'); 
+        const programText = document.getElementById('program-text');
+        const logOverlay = document.getElementById('log-overlay'); 
+        const videoFeedContainer = document.getElementById('multiview-container');
+        const logBody = document.getElementById('log-body');
+        const timeDisplay = document.getElementById('time-display');
+        const musicStatus = document.getElementById('music-status');
+        const globalMediaInput = document.getElementById('global-media-input');
+        const preloadArea = document.getElementById('preload-area');
+
+        // --- PRELOAD GAMBAR AGAR INSTANT CUT ---
+        function preloadImages() {
+            camImageUrls.forEach(url => {
+                if(url) {
+                    const img = new Image();
+                    img.src = url;
+                    // Error handler: Kalau gambar error/putus, ganti ke placeholder hitam
+                    img.onerror = function() { console.warn("Gagal memuat gambar: " + url); };
+                    preloadArea.appendChild(img);
+                }
+            });
+            console.log("Preloading started...");
+        }
+
+        // --- Inisialisasi Multiview ---
+        function initCameras() {
+            videoFeedContainer.innerHTML = '';
+            cameras.forEach(cam => {
+                const camWrapper = document.createElement('div');
+                camWrapper.className = 'camera-wrapper';
+                
+                const camIdLabel = document.createElement('div');
+                camIdLabel.className = 'cam-id-label';
+                camIdLabel.textContent = `CAM ${cam.key}`; 
+                camWrapper.appendChild(camIdLabel);
+
+                const camDiv = document.createElement('div');
+                camDiv.className = 'camera-preview';
+                camDiv.id = `cam-${cam.id}`;
+                
+                camDiv.onclick = () => cutToCamera(cam.id);
+                
+                // Set background preview
+                const imageUrl = camImageUrls[cam.id];
+                if (imageUrl) {
+                    camDiv.style.backgroundImage = `url('${imageUrl}')`;
+                }
+
+                camDiv.innerHTML = `
+                    <div class="camera-content">
+                        <strong>CAM ${cam.id}</strong>
+                        <span class="cam-desc">${cam.desc}</span>
+                    </div>
+                    <button class="cut-button" onclick="event.stopPropagation(); cutToCamera(${cam.id});">CUT</button>
+                `;
+                camWrapper.appendChild(camDiv); 
+                videoFeedContainer.appendChild(camWrapper); 
+            });
+            // Atur status awal
+            setProgramCamera(1, false);
+            logOverlay.textContent = 'SIAP! Tekan START/PAUSE dan CUT!';
+            logOverlay.style.display = 'block';
+        }
+
+        // --- Update Tampilan Monitor Program ---
+        function updateProgramMonitor(camId, updateLogOverlay = true) {
+            const cam = cameras.find(c => c.id === camId);
+            const imageUrl = camImageUrls[camId];
+            const isMediaCam = (camId === 1 && globalMediaFile && globalMediaFile.type.startsWith('video/'));
+
+            // 1. Tentukan konten media
+            if (isMediaCam) {
+                programMedia.src = globalMediaFile ? URL.createObjectURL(globalMediaFile) : '';
+                programMedia.style.display = 'block';
+                programMonitor.querySelector('.visualizer-content').style.backgroundColor = 'black';
+                programMedia.play(); 
+            } else if (imageUrl) { 
+                // Instant switch: Cek dulu src biar ga reload kalau sama
+                if(programMedia.src !== imageUrl) {
+                    programMedia.src = imageUrl; 
+                }
+                programMedia.style.display = 'block';
+                programMonitor.querySelector('.visualizer-content').style.backgroundColor = 'black';
+            } else {
+                programMedia.src = '';
+                programMedia.style.display = 'none';
+                programMonitor.querySelector('.visualizer-content').style.backgroundColor = '#333';
+            }
+            
+            // 2. Update status border
+            document.querySelectorAll('.camera-preview').forEach(el => el.classList.remove('program'));
+            const camDiv = document.getElementById(`cam-${camId}`);
+            if (camDiv) {
+                camDiv.classList.add('program');
+            }
+            
+            // Highlight CAM ID Label
+            document.querySelectorAll('.cam-id-label').forEach(el => el.classList.remove('program'));
+            const camLabel = camDiv ? camDiv.parentNode.querySelector('.cam-id-label') : null;
+            if (camLabel) {
+                 camLabel.classList.add('program');
+                 camLabel.style.backgroundColor = '#ff0000';
+            }
+            
+            programText.textContent = `CAM ${cam.id}: ${cam.desc}`; 
+            
+            // NO FADE EFFECT (Instant Cut)
+            programMonitor.style.opacity = 1;
+
+            // 3. Update Text Display Logic
+            const showOverlay = isRunning; 
+            
+            programText.style.display = showOverlay ? 'none' : 'block'; 
+            logOverlay.style.display = showOverlay ? 'block' : 'none'; 
+            
+            if (showOverlay) {
+                 const elapsed = globalMediaFile ? audio.currentTime.toFixed(2) : ((Date.now() - startTime) / 1000).toFixed(2);
+                 logOverlay.textContent = `[${elapsed}s] CAM ${cam.id}: ${cam.desc}`;
+            }
+        }
+        
+        function setProgramCamera(newCamId, log = true) {
+            if (newCamId === programCamId) return;
+
+            programCamId = newCamId;
+            updateProgramMonitor(programCamId);
+            if (log && isRunning) {
+                logSwitching(programCamId, cameras.find(c => c.id === programCamId).desc);
+            }
+        }
+        
+        function cutToCamera(camId) {
+            if (!isRunning) {
+                togglePlayPause(); 
+            }
+            setProgramCamera(camId, true);
+        }
+        
+        // --- Fungsi Log & Kontrol Timer ---
+
+        function startManualTimer() {
+            if (isRunning) return;
+            startTime = Date.now();
+            isRunning = true;
+            intervalTimer = setInterval(updateTimer, 50); 
+        }
+
+        function updateTimer() {
+            if (!isRunning) return;
+            
+            let elapsed;
+            if (globalMediaFile && !isNaN(audio.duration)) {
+                if (audio.ended) {
+                    togglePlayPause(); 
+                    return;
+                }
+                elapsed = audio.currentTime.toFixed(2);
+            } else {
+                elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+            }
+
+            timeDisplay.textContent = elapsed;
+            
+            // Update Log Overlay
+            const cam = cameras.find(c => c.id === programCamId);
+            logOverlay.textContent = `[${elapsed}s] CAM ${cam.id}: ${cam.desc}`;
+        }
+
+        function togglePlayPause() {
+            if (!globalMediaFile) {
+                startManualTimer(); 
+                musicStatus.textContent = `▶️ Timer Manual Aktif.`;
+                updateProgramMonitor(programCamId, false);
+                return;
+            }
+
+            if (audio.paused) {
+                const playPromise = audio.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        isRunning = true;
+                        
+                        if (globalMediaFile.type.startsWith('video/') && programCamId === 1) {
+                             programMedia.play();
+                        }
+                        startTime = Date.now() - (audio.currentTime * 1000); 
+                        musicStatus.textContent = `▶️ Memutar: ${globalMediaFile.name}`;
+                        if (!intervalTimer) intervalTimer = setInterval(updateTimer, 50);
+                        updateProgramMonitor(programCamId, false);
+                    }).catch(error => {
+                        musicStatus.textContent = `Error Play: Browser memblokir autoplay. Klik Play lagi.`;
+                        isRunning = false;
+                        clearInterval(intervalTimer);
+                        intervalTimer = null;
+                    });
+                }
+            } else {
+                audio.pause();
+                if (globalMediaFile.type.startsWith('video/')) {
+                    programMedia.pause();
+                }
+                isRunning = false;
+                musicStatus.textContent = `⏸️ PAUSED: ${globalMediaFile.name}`;
+                clearInterval(intervalTimer);
+                intervalTimer = null;
+                updateProgramMonitor(programCamId, false);
+            }
+        }
+
+        function logSwitching(camId, desc) {
+            if (!isRunning) return; 
+
+            const elapsed = globalMediaFile ? audio.currentTime.toFixed(2) : ((Date.now() - startTime) / 1000).toFixed(2);
+            
+            const newRow = logBody.insertRow(0); 
+            
+            const timeCell = newRow.insertCell(0);
+            timeCell.textContent = `${elapsed}s`;
+            
+            const camCell = newRow.insertCell(1);
+            camCell.textContent = `CAM ${camId}`;
+            
+            const descCell = newRow.insertCell(2);
+            descCell.textContent = desc;
+        }
+
+        function resetSimulator() {
+            if (confirm("Reset Log dan Timer?")) {
+                programCamId = 1;
+                logBody.innerHTML = '';
+                timeDisplay.textContent = '0.00';
+                
+                if (audio.src) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+                
+                isRunning = false;
+                clearInterval(intervalTimer);
+                intervalTimer = null;
+                startTime = 0;
+                
+                initCameras();
+                musicStatus.textContent = 'Upload file audio/video untuk mengaktifkan timer dan play/pause.';
+                logOverlay.textContent = 'SIAP! Tekan START/PAUSE dan CUT!';
+            }
+        }
+
+        // --- Event Listener ---
+        globalMediaInput.addEventListener('change', (event) => {
+            globalMediaFile = event.target.files[0];
+            if (globalMediaFile) {
+                const fileURL = URL.createObjectURL(globalMediaFile);
+                audio.src = fileURL;
+                audio.load();
+                musicStatus.textContent = `✅ File siap: ${globalMediaFile.name}. Tekan START/PAUSE.`;
+                resetSimulator(); 
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            const key = event.key;
+            const camId = hotkeyMap[key];
+            if (camId) {
+                event.preventDefault(); 
+                const cam = cameras.find(c => c.id === camId);
+                if (cam) {
+                    cutToCamera(cam.id);
+                }
+            }
+        });
+
+        // Jalankan saat load
+        window.onload = function() {
+            preloadImages(); 
+            initCameras();
+        };
+    </script>
+
+</body>
+</html>
