@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Malaysia Expenses - Full Features</title>
+    <title>Malaysia Expenses - Edit Only</title>
     <style>
-        :root { --primary: #008080; --secondary: #f4f4f9; --accent: #ff6b6b; --settle: #4caf50; --edit: #ff9800; --final: #673ab7; --delete: #e91e63; }
+        :root { --primary: #008080; --secondary: #f4f4f9; --accent: #ff6b6b; --settle: #4caf50; --edit: #ff9800; --final: #673ab7; }
         body { font-family: -apple-system, sans-serif; background-color: var(--secondary); margin: 0; padding: 15px; color: #333; }
         .container { max-width: 500px; margin: auto; }
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
@@ -20,10 +20,7 @@
         button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         button:disabled { background-color: #ccc; }
         
-        .action-btns { display: flex; gap: 5px; }
-        .btn-edit { background-color: var(--edit); padding: 5px 8px; font-size: 0.75em; width: auto; border-radius: 6px; }
-        .btn-delete { background-color: var(--delete); padding: 5px 8px; font-size: 0.75em; width: auto; border-radius: 6px; }
-        .btn-danger { background-color: #000; color: #fff; margin-top: 20px; font-size: 0.8em; opacity: 0.8; }
+        .btn-edit { background-color: var(--edit); padding: 5px 12px; font-size: 0.8em; width: auto; margin: 0; border-radius: 6px; }
         
         .status-sync { font-size: 0.7em; text-align: center; margin-bottom: 10px; color: #666; background: #fff; padding: 8px; border-radius: 20px; border: 1px solid #eee; }
         .settlement-card { background: #f3e5f5; border-left: 5px solid var(--final); padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px; font-size: 0.9em; }
@@ -74,8 +71,6 @@
     <div class="card">
         <h3>History Log</h3>
         <table class="rekap-table"><tbody id="logBody"></tbody></table>
-        
-        <button class="btn-danger" onclick="deleteAllData()">Clear All Records</button>
     </div>
 </div>
 
@@ -178,28 +173,6 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function deleteItem(id) {
-        if (confirm("Are you sure you want to delete this transaction?")) {
-            entries = entries.filter(item => item.id !== id);
-            saveData();
-            if (currentEditId === id) resetForm();
-        }
-    }
-
-    function deleteAllData() {
-        const firstCheck = confirm("DANGER: This will delete ALL trip records. Are you sure?");
-        if (firstCheck) {
-            const secondCheck = prompt("To confirm, type DELETE in capital letters:");
-            if (secondCheck === "DELETE") {
-                entries = [];
-                saveData();
-                alert("All records have been wiped.");
-            } else {
-                alert("Action cancelled. Input did not match.");
-            }
-        }
-    }
-
     function resetForm() {
         currentEditId = null;
         document.getElementById('amount').value = ''; 
@@ -218,14 +191,9 @@
         sorted.forEach(en => {
             const info = en.type === 'SPLIT_ALL' ? `By ${en.payer} (Split 3)` : `By ${en.payer} for ${en.borrower}`;
             logBody.innerHTML += `<tr>
-                <td style="width:60%"><b>${en.desc}</b><br><small>${en.date} | ${info}</small></td>
+                <td style="width:70%"><b>${en.desc}</b><br><small>${en.date} | ${info}</small></td>
                 <td style="width:20%; font-weight:bold;">RM ${en.amount.toFixed(2)}</td>
-                <td style="width:20%">
-                    <div class="action-btns">
-                        <button class="btn-edit" onclick="editItem(${en.id})">Edit</button>
-                        <button class="btn-delete" onclick="deleteItem(${en.id})">Del</button>
-                    </div>
-                </td>
+                <td style="width:10%"><button class="btn-edit" onclick="editItem(${en.id})">Edit</button></td>
             </tr>`;
         });
 
