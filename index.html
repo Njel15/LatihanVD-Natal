@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Malaysia Expenses - Edit Only</title>
+    <title>Malaysia Expenses - Audit Log Version</title>
     <style>
         :root { --primary: #008080; --secondary: #f4f4f9; --accent: #ff6b6b; --settle: #4caf50; --edit: #ff9800; --final: #673ab7; }
         body { font-family: -apple-system, sans-serif; background-color: var(--secondary); margin: 0; padding: 15px; color: #333; }
@@ -33,12 +33,16 @@
         
         .rekap-table { width: 100%; border-collapse: collapse; font-size: 0.82em; }
         .rekap-table td { border-bottom: 1px solid #eee; padding: 12px 4px; vertical-align: middle; }
+        
+        /* Revision Log Style */
+        .revision-container { margin-top: 5px; padding-left: 5px; border-left: 2px solid #ddd; }
+        .revision-tag { display: block; font-size: 0.7em; color: #999; line-height: 1.2; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🇲🇾 Malaysia Expenses</h2>
+    <h2>Malaysia Expenses</h2>
     <div class="status-sync" id="syncStatus">Initializing...</div>
 
     <div class="card" id="mainForm">
@@ -123,25 +127,49 @@
 
     function toggleTarget(show) { document.getElementById('targetPersonDiv').style.display = show ? 'block' : 'none'; }
 
+    function getNowFormatted() {
+        const now = new Date();
+        const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+        const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        return `${date} ${time}`;
+    }
+
     function addExpense() {
         const amountValue = document.getElementById('amount').value;
         if (!amountValue || parseFloat(amountValue) <= 0) return alert("Enter valid amount!");
 
-        const newData = {
-            id: currentEditId || Date.now(),
-            date: document.getElementById('transDate').value,
-            type: document.querySelector('input[name="splitType"]:checked').value === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT',
-            payer: document.getElementById('payer').value,
-            borrower: document.getElementById('borrower').value,
-            amount: parseFloat(amountValue),
-            desc: document.getElementById('desc').value || "Expense"
-        };
+        const editTimestamp = getNowFormatted();
 
         if (currentEditId) {
             const index = entries.findIndex(item => item.id === currentEditId);
-            if (index !== -1) entries[index] = newData;
+            if (index !== -1) {
+                // Keep the old revisions and add a new one
+                const oldRevisions = entries[index].revisions || [];
+                const updatedRevisions = [...oldRevisions, `Edited: ${editTimestamp}`];
+                
+                entries[index] = {
+                    ...entries[index],
+                    date: document.getElementById('transDate').value,
+                    type: document.querySelector('input[name="splitType"]:checked').value === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT',
+                    payer: document.getElementById('payer').value,
+                    borrower: document.getElementById('borrower').value,
+                    amount: parseFloat(amountValue),
+                    desc: document.getElementById('desc').value || "Expense",
+                    revisions: updatedRevisions
+                };
+            }
         } else {
-            entries.push(newData);
+            const newEntry = {
+                id: Date.now(),
+                date: document.getElementById('transDate').value,
+                type: document.querySelector('input[name="splitType"]:checked').value === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT',
+                payer: document.getElementById('payer').value,
+                borrower: document.getElementById('borrower').value,
+                amount: parseFloat(amountValue),
+                desc: document.getElementById('desc').value || "Expense",
+                revisions: [] // New entries start with no revisions
+            };
+            entries.push(newEntry);
         }
 
         saveData();
@@ -190,13 +218,29 @@
         
         sorted.forEach(en => {
             const info = en.type === 'SPLIT_ALL' ? `By ${en.payer} (Split 3)` : `By ${en.payer} for ${en.borrower}`;
+            
+            // Generate revision HTML
+            let revisionHTML = '';
+            if (en.revisions && en.revisions.length > 0) {
+                revisionHTML = '<div class="revision-container">';
+                en.revisions.forEach(rev => {
+                    revisionHTML += `<span class="revision-tag">${rev}</span>`;
+                });
+                revisionHTML += '</div>';
+            }
+
             logBody.innerHTML += `<tr>
-                <td style="width:70%"><b>${en.desc}</b><br><small>${en.date} | ${info}</small></td>
+                <td style="width:70%">
+                    <b>${en.desc}</b><br>
+                    <small>${en.date} | ${info}</small>
+                    ${revisionHTML}
+                </td>
                 <td style="width:20%; font-weight:bold;">RM ${en.amount.toFixed(2)}</td>
                 <td style="width:10%"><button class="btn-edit" onclick="editItem(${en.id})">Edit</button></td>
             </tr>`;
         });
 
+        // Calculations (Matrix & Netting)
         let matrix = { "Njel": { "Ria": 0, "Ira": 0 }, "Ria": { "Njel": 0, "Ira": 0 }, "Ira": { "Njel": 0, "Ria": 0 } };
         let history = { "Njel": { "Ria": [], "Ira": [] }, "Ria": { "Njel": [], "Ira": [] }, "Ira": { "Njel": [], "Ria": [] } };
 
@@ -209,6 +253,7 @@
             }
         });
 
+        // Render Debt Sections
         const container = document.getElementById('debtSections');
         container.innerHTML = "";
         names.forEach(user => {
@@ -227,6 +272,7 @@
             container.innerHTML += html + (hasDebt ? "" : "<p style='color:#999;font-size:0.8em'>Clear / No debts</p>") + "</div>";
         });
 
+        // Render Net Settlement
         const pairs = [["Njel", "Ria"], ["Njel", "Ira"], ["Ria", "Ira"]];
         let finalHTML = "";
         pairs.forEach(p => {
