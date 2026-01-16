@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trip Malaysia - Personal Debt</title>
+    <title>Trip Malaysia - Hybrid Splitbill</title>
     <style>
         :root { --primary: #008080; --secondary: #f4f4f9; --accent: #ff6b6b; --settle: #4caf50; }
         body { font-family: -apple-system, sans-serif; background-color: var(--secondary); margin: 0; padding: 15px; color: #333; }
@@ -13,8 +13,9 @@
         label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
         select, input, button { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         
-        /* Style untuk pilihan target hutang */
-        .target-group { background: #fff8e1; padding: 10px; border-radius: 8px; border: 1px solid #ffe082; margin-bottom: 15px; }
+        .type-group { background: #e0f2f1; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #b2dfdb; }
+        .radio-box { display: flex; gap: 15px; align-items: center; padding: 5px 0; }
+        .radio-box input { width: auto; margin: 0; }
         
         button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-settle { background-color: var(--settle); }
@@ -35,10 +36,10 @@
 <body>
 
 <div class="container">
-    <h2>🇲🇾 Trip Expenses (Personal)</h2>
+    <h2>🇲🇾 Trip Expenses Hybrid</h2>
 
     <div class="card">
-        <h3>💸 Catat Talangan</h3>
+        <h3>💸 Tambah Transaksi</h3>
         <label>Siapa yang bayar?</label>
         <select id="payer">
             <option value="Njel">Njel</option>
@@ -46,42 +47,54 @@
             <option value="Ira">Ira</option>
         </select>
 
-        <label>Dibayarkan untuk siapa?</label>
-        <select id="borrower">
-            <option value="Ria">Ria</option>
-            <option value="Njel">Njel</option>
-            <option value="Ira">Ira</option>
-        </select>
+        <div class="type-group">
+            <label>Metode Pembagian:</label>
+            <div class="radio-box">
+                <input type="radio" name="splitType" value="all" checked onclick="toggleTarget(false)"> Bagi 3 (Splitbill)
+            </div>
+            <div class="radio-box">
+                <input type="radio" name="splitType" value="single" onclick="toggleTarget(true)"> Talangin 1 Orang
+            </div>
+        </div>
 
-        <label>Nominal (RM)</label>
+        <div id="targetPersonDiv" style="display:none;">
+            <label>Ditalangin untuk siapa?</label>
+            <select id="borrower">
+                <option value="Ria">Ria</option>
+                <option value="Njel">Njel</option>
+                <option value="Ira">Ira</option>
+            </select>
+        </div>
+
+        <label>Nominal Total (RM)</label>
         <input type="number" id="amount" placeholder="0.00" inputmode="decimal">
 
         <label>Deskripsi</label>
-        <input type="text" id="desc" placeholder="Misal: Beli tiket atau jajanan">
+        <input type="text" id="desc" placeholder="Misal: Makan Genting / Tiket">
 
-        <button onclick="addExpense()">Tambah Hutang</button>
+        <button onclick="addExpense()">Simpan Transaksi</button>
     </div>
 
     <div class="card" style="border: 2px solid var(--settle);">
-        <h3>🤝 Konfirmasi Bayar / Pelunasan</h3>
-        <label>Nama yang bayar:</label>
+        <h3>🤝 Pelunasan Hutang</h3>
+        <label>Dari:</label>
         <select id="fromPerson"><option>Njel</option><option>Ria</option><option>Ira</option></select>
-        <label>Bayar ke siapa:</label>
+        <label>Ke:</label>
         <select id="toPerson"><option>Ria</option><option>Njel</option><option>Ira</option></select>
         <input type="number" id="payAmount" placeholder="Nominal RM" inputmode="decimal">
-        <input type="text" id="payDesc" placeholder="Keterangan (Misal: Cash / Transfer)">
-        <button class="btn-settle" onclick="addSettlement()">Catat Pelunasan</button>
+        <input type="text" id="payDesc" placeholder="Keterangan (Cash/TF)">
+        <button class="btn-settle" onclick="addSettlement()">Konfirmasi Lunas</button>
     </div>
 
     <div class="card">
-        <h3>💰 Detail Hutang Per Orang</h3>
+        <h3>💰 Detail Kurang Bayar</h3>
         <div id="debtSections"></div>
     </div>
 
     <div class="card">
-        <h3>📜 History Semua</h3>
+        <h3>📜 History</h3>
         <table class="rekap-table">
-            <thead><tr><th>Desc</th><th>Dari -> Ke</th><th>Total</th></tr></thead>
+            <thead><tr><th>Desc</th><th>Pihak</th><th>Total</th></tr></thead>
             <tbody id="logBody"></tbody>
         </table>
         <button class="clear-btn" onclick="clearData()">Hapus Semua Data</button>
@@ -89,19 +102,29 @@
 </div>
 
 <script>
-    let entries = JSON.parse(localStorage.getItem('tripDataPersonalV1')) || [];
+    let entries = JSON.parse(localStorage.getItem('tripDataHybridV1')) || [];
     const names = ["Njel", "Ria", "Ira"];
+
+    function toggleTarget(show) {
+        document.getElementById('targetPersonDiv').style.display = show ? 'block' : 'none';
+    }
 
     function addExpense() {
         const payer = document.getElementById('payer').value;
-        const borrower = document.getElementById('borrower').value;
         const amount = parseFloat(document.getElementById('amount').value);
-        const desc = document.getElementById('desc').value || "Talangan";
+        const desc = document.getElementById('desc').value || "Belanja";
+        const splitType = document.querySelector('input[name="splitType"]:checked').value;
+        const borrower = document.getElementById('borrower').value;
 
         if (!amount || amount <= 0) return alert("Isi nominal!");
-        if (payer === borrower) return alert("Pilih orang yang berbeda untuk dihutangi!");
 
-        entries.push({ type: 'DEBT', payer, borrower, amount, desc });
+        if (splitType === 'all') {
+            entries.push({ type: 'SPLIT_ALL', payer, amount, desc });
+        } else {
+            if (payer === borrower) return alert("Masa nalangin diri sendiri?");
+            entries.push({ type: 'SINGLE_DEBT', payer, borrower, amount, desc });
+        }
+
         saveAndRender();
         document.getElementById('amount').value = ''; 
         document.getElementById('desc').value = '';
@@ -114,7 +137,6 @@
         const payDesc = document.getElementById('payDesc').value || "Bayar Hutang";
 
         if (from === to || !amount) return alert("Data tidak valid!");
-
         entries.push({ type: 'SETTLE', from, to, amount, desc: payDesc });
         saveAndRender();
         document.getElementById('payAmount').value = '';
@@ -122,7 +144,7 @@
     }
 
     function saveAndRender() {
-        localStorage.setItem('tripDataPersonalV1', JSON.stringify(entries));
+        localStorage.setItem('tripDataHybridV1', JSON.stringify(entries));
         renderLog();
         renderDebts();
     }
@@ -131,7 +153,11 @@
         const logBody = document.getElementById('logBody');
         logBody.innerHTML = "";
         entries.slice().reverse().forEach(en => {
-            const label = en.type === 'DEBT' ? `${en.payer} ➔ ${en.borrower}` : `${en.from} ✅ ${en.to}`;
+            let label = "";
+            if (en.type === 'SPLIT_ALL') label = `${en.payer} (Bagi 3)`;
+            else if (en.type === 'SINGLE_DEBT') label = `${en.payer} ➔ ${en.borrower}`;
+            else label = `${en.from} ✅ ${en.to}`;
+
             logBody.innerHTML += `<tr>
                 <td>${en.desc}</td>
                 <td>${label}</td>
@@ -150,13 +176,17 @@
             names.forEach(n => { if(n !== user) { userDebts[n] = 0; historyForUser[n] = []; } });
 
             entries.forEach(en => {
-                // Jika user adalah yang dihutangi (Borrower)
-                if (en.type === 'DEBT') {
+                if (en.type === 'SPLIT_ALL') {
+                    let share = en.amount / 3;
+                    if (en.payer !== user) {
+                        userDebts[en.payer] += share;
+                        historyForUser[en.payer].push({ desc: "(S) " + en.desc, amt: share });
+                    }
+                } else if (en.type === 'SINGLE_DEBT') {
                     if (en.borrower === user) {
                         userDebts[en.payer] += en.amount;
-                        historyForUser[en.payer].push({ desc: en.desc, amt: en.amount });
+                        historyForUser[en.payer].push({ desc: "(P) " + en.desc, amt: en.amount });
                     }
-                    // Jika user adalah pembayar, dia tidak punya hutang dari transaksi ini
                 } else if (en.type === 'SETTLE') {
                     if (en.from === user) {
                         userDebts[en.to] -= en.amount;
@@ -188,7 +218,7 @@
         });
     }
 
-    function clearData() { if(confirm("Hapus semua history?")) { entries = []; saveAndRender(); } }
+    function clearData() { if(confirm("Hapus semua?")) { entries = []; saveAndRender(); } }
     renderLog(); renderDebts();
 </script>
 
