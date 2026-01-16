@@ -1,127 +1,241 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pengeluaran Malaysia</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    input, select, button { padding: 5px; margin: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Malaysia Split Bill</title>
+    <style>
+        :root {
+            --primary: #008080;
+            --secondary: #f4f4f9;
+            --accent: #ff6b6b;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--secondary);
+            margin: 0;
+            padding: 15px;
+            color: #333;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+        }
+        h2 { text-align: center; color: var(--primary); }
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
+        select, input, button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px; /* Mencegah auto-zoom di iPhone */
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            background: #e9f5f5;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .checkbox-group input { width: auto; margin: 0; }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:active { opacity: 0.8; }
+        
+        .rekap-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+        .rekap-table th, .rekap-table td {
+            border-bottom: 1px solid #eee;
+            padding: 10px 5px;
+            text-align: left;
+        }
+        .debt-list {
+            list-style: none;
+            padding: 0;
+            font-size: 0.9em;
+        }
+        .debt-item {
+            padding: 8px;
+            background: #fff3f3;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            border-left: 4px solid var(--accent);
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .summary-box {
+            background: #eee;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.8em;
+        }
+    </style>
 </head>
 <body>
-  <h2>Pengeluaran Selama di Malaysia</h2>
 
-  <div>
-    <label>Nama Pembayar:</label>
-    <select id="payer">
-      <option value="Njel">Njel</option>
-      <option value="Ria">Ria</option>
-      <option value="Ira">Ira</option>
-    </select><br>
+<div class="container">
+    <h2>🇲🇾 Malaysia Expenses</h2>
 
-    <label>Nominal (RM):</label>
-    <input type="number" id="amount" placeholder="Contoh: 50"><br>
+    <div class="card">
+        <label>Siapa yang bayar?</label>
+        <select id="payer">
+            <option value="Njel">Njel</option>
+            <option value="Ria">Ria</option>
+            <option value="Ira">Ira</option>
+        </select>
 
-    <label>Deskripsi:</label>
-    <input type="text" id="desc" placeholder="Contoh: Makan siang"><br>
+        <label>Nominal (RM)</label>
+        <input type="number" id="amount" placeholder="Contoh: 50" inputmode="decimal">
 
-    <label>Split Bill:</label>
-    <input type="checkbox" id="split"> Bagi 3<br>
+        <label>Deskripsi</label>
+        <input type="text" id="desc" placeholder="Makan siang / Grab">
 
-    <button onclick="addExpense()">Tambah Pengeluaran</button>
-  </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="isSplit" checked>
+            <label for="isSplit" style="margin:0">Bagi rata 3 orang?</label>
+        </div>
 
-  <h3>Daftar Pengeluaran</h3>
-  <table id="expenseTable">
-    <thead>
-      <tr>
-        <th>Pembayar</th>
-        <th>Nominal (RM)</th>
-        <th>Deskripsi</th>
-        <th>Split Bill</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+        <button onclick="addExpense()">Tambah Pengeluaran</button>
+    </div>
 
-  <h3>Rekap Per Orang</h3>
-  <table id="summaryTable">
-    <thead>
-      <tr>
-        <th>Nama</th>
-        <th>Total Bayar</th>
-        <th>Harus Diterima / Dibayar</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td>Njel</td><td id="totalNjel">0</td><td id="balanceNjel">0</td></tr>
-      <tr><td>Ria</td><td id="totalRia">0</td><td id="balanceRia">0</td></tr>
-      <tr><td>Ira</td><td id="totalIra">0</td><td id="balanceIra">0</td></tr>
-    </tbody>
-  </table>
+    <div class="card">
+        <h3>💰 Kurang Bayar</h3>
+        <div id="debtContainer" class="debt-list">
+            Semua lunas!
+        </div>
+    </div>
 
-  <script>
+    <div class="card">
+        <h3>📜 Log Aktivitas</h3>
+        <table class="rekap-table">
+            <thead>
+                <tr>
+                    <th>Desc</th>
+                    <th>Oleh</th>
+                    <th>Total</th>
+                    <th>Tipe</th>
+                </tr>
+            </thead>
+            <tbody id="logBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
     let expenses = [];
+    const names = ["Njel", "Ria", "Ira"];
 
     function addExpense() {
-      const payer = document.getElementById('payer').value;
-      const amount = parseFloat(document.getElementById('amount').value);
-      const desc = document.getElementById('desc').value;
-      const split = document.getElementById('split').checked;
+        const payer = document.getElementById('payer').value;
+        const amount = parseFloat(document.getElementById('amount').value);
+        const desc = document.getElementById('desc').value || "Tanpa deskripsi";
+        const isSplit = document.getElementById('isSplit').checked;
 
-      if (!amount || !desc) {
-        alert("Masukkan nominal dan deskripsi!");
-        return;
-      }
-
-      const expense = { payer, amount, desc, split };
-      expenses.push(expense);
-      renderTable();
-      updateSummary();
-    }
-
-    function renderTable() {
-      const tbody = document.querySelector("#expenseTable tbody");
-      tbody.innerHTML = "";
-      expenses.forEach(exp => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${exp.payer}</td>
-          <td>${exp.amount.toFixed(2)}</td>
-          <td>${exp.desc}</td>
-          <td>${exp.split ? "Ya" : "Tidak"}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function updateSummary() {
-      let totals = { Njel: 0, Ria: 0, Ira: 0 };
-      let balances = { Njel: 0, Ria: 0, Ira: 0 };
-
-      expenses.forEach(exp => {
-        totals[exp.payer] += exp.amount;
-        if (exp.split) {
-          const share = exp.amount / 3;
-          balances.Njel += share;
-          balances.Ria += share;
-          balances.Ira += share;
-          balances[exp.payer] -= exp.amount; // karena sudah bayar
+        if (!amount || amount <= 0) {
+            alert("Masukkan nominal yang bener dong!");
+            return;
         }
-      });
 
-      document.getElementById("totalNjel").textContent = totals.Njel.toFixed(2);
-      document.getElementById("totalRia").textContent = totals.Ria.toFixed(2);
-      document.getElementById("totalIra").textContent = totals.Ira.toFixed(2);
+        expenses.push({ payer, amount, desc, isSplit });
+        
+        // Reset Form
+        document.getElementById('amount').value = '';
+        document.getElementById('desc').value = '';
 
-      document.getElementById("balanceNjel").textContent = balances.Njel.toFixed(2);
-      document.getElementById("balanceRia").textContent = balances.Ria.toFixed(2);
-      document.getElementById("balanceIra").textContent = balances.Ira.toFixed(2);
+        renderAll();
     }
-  </script>
+
+    function calculateDebts() {
+        // Objek untuk menyimpan saldo bersih tiap orang
+        // Positif berarti orang itu harus menerima uang, negatif berarti harus bayar.
+        let balance = { "Njel": 0, "Ria": 0, "Ira": 0 };
+
+        expenses.forEach(exp => {
+            if (exp.isSplit) {
+                let share = exp.amount / 3;
+                names.forEach(name => {
+                    balance[name] -= share;
+                });
+                balance[exp.payer] += exp.amount;
+            } else {
+                // Jika tidak split, dianggap pengeluaran pribadi (tidak masuk hitungan hutang)
+                // Tapi dalam konteks ini biasanya semua pengeluaran di grup adalah untuk bersama
+                balance[exp.payer] += 0; 
+            }
+        });
+
+        return balance;
+    }
+
+    function renderAll() {
+        const logBody = document.getElementById('logBody');
+        const debtContainer = document.getElementById('debtContainer');
+        
+        // Render Log
+        logBody.innerHTML = "";
+        expenses.slice().reverse().forEach(exp => {
+            logBody.innerHTML += `
+                <tr>
+                    <td>${exp.desc}</td>
+                    <td><b>${exp.payer}</b></td>
+                    <td>RM ${exp.amount}</td>
+                    <td>${exp.isSplit ? 'Split 3' : 'Pribadi'}</td>
+                </tr>
+            `;
+        });
+
+        // Render Debts (Kurang Bayar)
+        const balance = calculateDebts();
+        let debtors = [];
+        let creditors = [];
+
+        for (let name in balance) {
+            if (balance[name] < -0.01) debtors.push({ name, amt: Math.abs(balance[name]) });
+            if (balance[name] > 0.01) creditors.push({ name, amt: balance[name] });
+        }
+
+        let debtHTML = "";
+        
+        // Algoritma sederhana settlement
+        debtors.forEach(d => {
+            creditors.forEach(c => {
+                if (d.amt > 0 && c.amt > 0) {
+                    let payment = Math.min(d.amt, c.amt);
+                    debtHTML += `<div class="debt-item"><b>${d.name}</b> kurang bayar ke <b>${c.name}</b>: <br><strong>RM ${payment.toFixed(2)}</strong></div>`;
+                    d.amt -= payment;
+                    c.amt -= payment;
+                }
+            });
+        });
+
+        debtContainer.innerHTML = debtHTML || "Semua lunas atau belum ada data.";
+    }
+</script>
+
 </body>
 </html>
