@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Malaysia Expenses - Bug Fixed</title>
+    <title>Malaysia Expenses - Final Fix</title>
     <style>
         :root { --primary: #008080; --secondary: #f4f4f9; --accent: #ff6b6b; --settle: #4caf50; --edit: #ff9800; --final: #673ab7; }
         body { font-family: -apple-system, sans-serif; background-color: var(--secondary); margin: 0; padding: 15px; color: #333; }
         .container { max-width: 500px; margin: auto; }
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        h3 { margin-top: 0; font-size: 1.1em; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        h3 { margin-top: 0; font-size: 1.1em; color: var(--primary); }
         label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
         select, input, button { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
         
         .type-group { background: #e0f2f1; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #b2dfdb; }
         .radio-box { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer; }
         .radio-box input[type="radio"] { width: 20px; height: 20px; margin: 0; }
-        .radio-box label { margin: 0; font-weight: normal; font-size: 0.95em; cursor: pointer; }
-
-        button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
-        .btn-edit { background-color: var(--edit); padding: 5px 10px; font-size: 0.8em; width: auto; margin: 0; border-radius: 6px; }
-        .status-sync { font-size: 0.7em; text-align: center; margin-bottom: 10px; color: #666; background: #fff; padding: 8px; border-radius: 20px; border: 1px solid #eee; }
         
+        button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:disabled { background-color: #ccc; }
+        .btn-edit { background-color: var(--edit); padding: 5px 10px; font-size: 0.8em; width: auto; margin: 0; border-radius: 6px; }
+        
+        .status-sync { font-size: 0.7em; text-align: center; margin-bottom: 10px; color: #666; background: #fff; padding: 8px; border-radius: 20px; border: 1px solid #eee; }
         .settlement-card { background: #f3e5f5; border-left: 5px solid var(--final); padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px; font-size: 0.9em; }
         .person-debt-card { border-left: 5px solid var(--primary); padding: 10px; background: #fafafa; margin-bottom: 15px; border-radius: 0 8px 8px 0; }
         .debt-row { display: flex; justify-content: space-between; padding: 8px 0; font-weight: bold; color: var(--accent); border-bottom: 1px solid #ffebee; }
@@ -32,54 +32,29 @@
         
         .rekap-table { width: 100%; border-collapse: collapse; font-size: 0.82em; }
         .rekap-table td { border-bottom: 1px solid #eee; padding: 12px 4px; vertical-align: middle; }
-        .log-explanation { color: #777; font-size: 0.85em; margin-top: 3px; display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🇲🇾 Malaysia Expenses</h2>
-    <div class="status-sync" id="syncStatus">Connecting...</div>
+    <h2>Malaysia Expenses</h2>
+    <div class="status-sync" id="syncStatus">Initializing...</div>
 
     <div class="card" id="mainForm">
         <h3 id="formTitle">Add Transaction</h3>
         <label>Date</label>
         <input type="date" id="transDate">
-        
         <label>Payer</label>
-        <select id="payer">
-            <option value="Njel">Njel</option>
-            <option value="Ria">Ria</option>
-            <option value="Ira">Ira</option>
-        </select>
-        
+        <select id="payer"><option value="Njel">Njel</option><option value="Ria">Ria</option><option value="Ira">Ira</option></select>
         <div class="type-group">
-            <label style="margin-bottom: 8px; color: var(--primary);">Split Method:</label>
-            <div class="radio-box" onclick="document.getElementById('typeAll').click()">
-                <input type="radio" name="splitType" id="typeAll" value="all" checked onclick="toggleTarget(false)">
-                <label for="typeAll">Split by 3 (Equal)</label>
-            </div>
-            <div class="radio-box" onclick="document.getElementById('typeSingle').click()">
-                <input type="radio" name="splitType" id="typeSingle" value="single" onclick="toggleTarget(true)">
-                <label for="typeSingle">Pay for 1 Person</label>
-            </div>
+            <div class="radio-box"><input type="radio" name="splitType" id="typeAll" value="all" checked onclick="toggleTarget(false)"><label for="typeAll">Split by 3</label></div>
+            <div class="radio-box"><input type="radio" name="splitType" id="typeSingle" value="single" onclick="toggleTarget(true)"><label for="typeSingle">Pay for 1 Person</label></div>
         </div>
-
-        <div id="targetPersonDiv" style="display:none;">
-            <label>Paid for whom?</label>
-            <select id="borrower">
-                <option value="Ria">Ria</option>
-                <option value="Njel">Njel</option>
-                <option value="Ira">Ira</option>
-            </select>
-        </div>
-
+        <div id="targetPersonDiv" style="display:none;"><label>For whom?</label><select id="borrower"><option value="Ria">Ria</option><option value="Njel">Njel</option><option value="Ira">Ira</option></select></div>
         <input type="number" id="amount" placeholder="0.00" inputmode="decimal">
-
-        <label>Description</label>
-        <input type="text" id="desc" placeholder="e.g. Lunch / Grab">
+        <input type="text" id="desc" placeholder="e.g. Lunch">
         <button onclick="addExpense()" id="submitBtn">Save & Sync</button>
-        <button onclick="resetForm()" id="cancelBtn" style="display:none; background:#999;">Cancel Edit</button>
+        <button onclick="resetForm()" id="cancelBtn" style="display:none; background:#999; margin-top: -5px;">Cancel Edit</button>
     </div>
 
     <div class="card">
@@ -88,15 +63,13 @@
     </div>
 
     <div class="card" style="border: 2px solid var(--final);">
-        <h3 style="color: var(--final);">Net Settlement</h3>
+        <h3>Net Settlement</h3>
         <div id="finalSettlement"></div>
     </div>
 
     <div class="card">
         <h3>History Log</h3>
-        <table class="rekap-table">
-            <tbody id="logBody"></tbody>
-        </table>
+        <table class="rekap-table"><tbody id="logBody"></tbody></table>
     </div>
 </div>
 
@@ -118,33 +91,40 @@
             });
             const data = await res.json();
             entries = data.record.entries || [];
-            document.getElementById('syncStatus').innerText = "Online | ID: " + BIN_ID;
+            document.getElementById('syncStatus').innerText = "Online | Sync OK";
             renderAll();
         } catch (e) {
-            document.getElementById('syncStatus').innerText = "Sync Error";
+            document.getElementById('syncStatus').innerText = "Sync Error - Check Internet";
         }
     }
 
     async function saveData() {
-        document.getElementById('syncStatus').innerText = "Syncing...";
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        document.getElementById('syncStatus').innerText = "Updating Server...";
+        
         try {
-            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
                 body: JSON.stringify({ entries: entries })
             });
-            document.getElementById('syncStatus').innerText = "Sync Successful";
-            renderAll();
+            if(res.ok) {
+                document.getElementById('syncStatus').innerText = "Success! Data Updated";
+                renderAll();
+            }
         } catch (e) {
-            alert("Failed to sync data.");
+            alert("Failed to save. Try again.");
+        } finally {
+            btn.disabled = false;
         }
     }
 
     function toggleTarget(show) { document.getElementById('targetPersonDiv').style.display = show ? 'block' : 'none'; }
 
     function addExpense() {
-        const amount = parseFloat(document.getElementById('amount').value);
-        if (!amount) return alert("Please enter amount!");
+        const amountValue = document.getElementById('amount').value;
+        if (!amountValue || parseFloat(amountValue) <= 0) return alert("Enter valid amount!");
 
         const newData = {
             id: currentEditId || Date.now(),
@@ -152,7 +132,7 @@
             type: document.querySelector('input[name="splitType"]:checked').value === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT',
             payer: document.getElementById('payer').value,
             borrower: document.getElementById('borrower').value,
-            amount,
+            amount: parseFloat(amountValue),
             desc: document.getElementById('desc').value || "Expense"
         };
 
@@ -172,7 +152,6 @@
         if (!item) return;
 
         currentEditId = id;
-        
         document.getElementById('amount').value = item.amount;
         document.getElementById('desc').value = item.desc;
         document.getElementById('transDate').value = item.date;
@@ -188,7 +167,7 @@
         }
 
         document.getElementById('formTitle').innerText = "Edit Transaction";
-        document.getElementById('submitBtn').innerText = "Update & Sync";
+        document.getElementById('submitBtn').innerText = "Update Now";
         document.getElementById('cancelBtn').style.display = "block";
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -200,61 +179,38 @@
         document.getElementById('formTitle').innerText = "Add Transaction";
         document.getElementById('submitBtn').innerText = "Save & Sync";
         document.getElementById('cancelBtn').style.display = "none";
+        document.getElementById('transDate').value = new Date().toISOString().split('T')[0];
     }
 
     function renderAll() {
+        // 1. Render Log (Sorted by Date)
         const logBody = document.getElementById('logBody');
         logBody.innerHTML = "";
+        let sorted = [...entries].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
         
-        // Sorting untuk tampilan log (tidak mengubah data asli di 'entries')
-        let sortedEntries = [...entries].sort((a, b) => {
-            if (b.date !== a.date) return b.date.localeCompare(a.date);
-            return b.id - a.id;
-        });
-
-        sortedEntries.forEach((en) => {
-            let explanation = en.type === 'SPLIT_ALL' ? `By <b>${en.payer}</b> (Split 3)` : `By <b>${en.payer}</b> paid for <b>${en.borrower}</b>`;
+        sorted.forEach(en => {
+            const info = en.type === 'SPLIT_ALL' ? `By ${en.payer} (Split 3)` : `By ${en.payer} for ${en.borrower}`;
             logBody.innerHTML += `<tr>
-                <td style="width:70%">
-                    <b>${en.desc}</b>
-                    <span class="log-explanation">${en.date} | ${explanation}</span>
-                </td>
+                <td style="width:70%"><b>${en.desc}</b><br><small>${en.date} | ${info}</small></td>
                 <td style="width:20%; font-weight:bold;">RM ${en.amount.toFixed(2)}</td>
                 <td style="width:10%"><button class="btn-edit" onclick="editItem(${en.id})">Edit</button></td>
             </tr>`;
         });
 
+        // 2. Calculations
         let matrix = { "Njel": { "Ria": 0, "Ira": 0 }, "Ria": { "Njel": 0, "Ira": 0 }, "Ira": { "Njel": 0, "Ria": 0 } };
         let history = { "Njel": { "Ria": [], "Ira": [] }, "Ria": { "Njel": [], "Ira": [] }, "Ira": { "Njel": [], "Ria": [] } };
 
         entries.forEach(en => {
             if (en.type === 'SPLIT_ALL') {
                 let share = en.amount / 3;
-                names.forEach(n => { 
-                    if(n !== en.payer) { 
-                        matrix[en.payer][n] += share; 
-                        history[n][en.payer].push({d: en.desc, a: share, dt: en.date}); 
-                    } 
-                });
-            } else if (en.type === 'SINGLE_DEBT') {
-                if(en.payer !== en.borrower) { 
-                    matrix[en.payer][en.borrower] += en.amount; 
-                    history[en.borrower][en.payer].push({d: en.desc, a: en.amount, dt: en.date}); 
-                }
+                names.forEach(n => { if(n !== en.payer) { matrix[en.payer][n] += share; history[n][en.payer].push({d: en.desc, a: share, dt: en.date}); } });
+            } else {
+                if(en.payer !== en.borrower) { matrix[en.payer][en.borrower] += en.amount; history[en.borrower][en.payer].push({d: en.desc, a: en.amount, dt: en.date}); }
             }
         });
 
-        const pairs = [["Njel", "Ria"], ["Njel", "Ira"], ["Ria", "Ira"]];
-        let finalHTML = "";
-        pairs.forEach(p => {
-            let diff = matrix[p[0]][p[1]] - matrix[p[1]][p[0]];
-            if (Math.abs(diff) > 0.01) {
-                if (diff > 0) finalHTML += `<div class="settlement-card"><p><b>${p[1]}</b> pays <b>${p[0]}</b>: <b>RM ${diff.toFixed(2)}</b></p></div>`;
-                else finalHTML += `<div class="settlement-card"><p><b>${p[0]}</b> pays <b>${p[1]}</b>: <b>RM ${Math.abs(diff).toFixed(2)}</b></p></div>`;
-            }
-        });
-        document.getElementById('finalSettlement').innerHTML = finalHTML || "<p style='text-align:center;color:#888'>All Settled</p>";
-
+        // 3. Render Debts
         const container = document.getElementById('debtSections');
         container.innerHTML = "";
         names.forEach(user => {
@@ -263,20 +219,27 @@
             names.forEach(target => {
                 if (user !== target && matrix[target][user] > 0.01) {
                     hasDebt = true;
-                    html += `<div class="debt-row"><span>To ${target}</span><span>RM ${matrix[target][user].toFixed(2)}</span></div>`;
-                    html += `<div class="mini-history">`;
-                    let sortedHistory = history[user][target].sort((a,b) => b.dt.localeCompare(a.dt));
-                    sortedHistory.forEach(item => { 
-                        html += `<div class="mini-item">
-                                    <span><span class="mini-date">${item.dt.split('-')[2]}/${item.dt.split('-')[1]}</span> ${item.d}</span>
-                                    <span>RM ${item.a.toFixed(2)}</span>
-                                 </div>`; 
+                    html += `<div class="debt-row"><span>To ${target}</span><span>RM ${matrix[target][user].toFixed(2)}</span></div><div class="mini-history">`;
+                    history[user][target].sort((a,b) => b.dt.localeCompare(a.dt)).forEach(item => {
+                        html += `<div class="mini-item"><span><span class="mini-date">${item.dt.split('-')[2]}/${item.dt.split('-')[1]}</span> ${item.d}</span><span>RM ${item.a.toFixed(2)}</span></div>`;
                     });
                     html += `</div>`;
                 }
             });
-            container.innerHTML += html + (hasDebt ? "" : "<p style='color:#999;font-size:0.8em'>No debts</p>") + "</div>";
+            container.innerHTML += html + (hasDebt ? "" : "<p style='color:#999;font-size:0.8em'>Clear / No debts</p>") + "</div>";
         });
+
+        // 4. Render Final Settlement
+        const pairs = [["Njel", "Ria"], ["Njel", "Ira"], ["Ria", "Ira"]];
+        let finalHTML = "";
+        pairs.forEach(p => {
+            let diff = matrix[p[0]][p[1]] - matrix[p[1]][p[0]];
+            if (Math.abs(diff) > 0.01) {
+                if (diff > 0) finalHTML += `<div class="settlement-card"><b>${p[1]}</b> pays <b>${p[0]}</b>: <b>RM ${diff.toFixed(2)}</b></div>`;
+                else finalHTML += `<div class="settlement-card"><b>${p[0]}</b> pays <b>${p[1]}</b>: <b>RM ${Math.abs(diff).toFixed(2)}</b></div>`;
+            }
+        });
+        document.getElementById('finalSettlement').innerHTML = finalHTML || "<p style='text-align:center;color:#888'>All Settled</p>";
     }
 
     loadData();
