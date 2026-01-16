@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trip Malaysia - Net Settlement</title>
+    <title>Trip Malaysia - Online Sync</title>
     <style>
         :root { --primary: #008080; --secondary: #f4f4f9; --accent: #ff6b6b; --settle: #4caf50; --edit: #ff9800; --final: #673ab7; }
         body { font-family: -apple-system, sans-serif; background-color: var(--secondary); margin: 0; padding: 15px; color: #333; }
@@ -13,60 +13,60 @@
         label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
         select, input, button { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         
+        .status-sync { font-size: 0.7em; text-align: center; margin-bottom: 10px; color: #666; }
+        .loading { opacity: 0.5; pointer-events: none; }
+
         .type-group { background: #e0f2f1; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #b2dfdb; }
-        .radio-box { display: flex; gap: 15px; align-items: center; padding: 5px 0; }
+        .radio-box { display: flex; gap: 10px; align-items: center; padding: 5px 0; font-size: 0.9em; }
         .radio-box input { width: auto; height: auto; margin: 0; }
         
         button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-edit { background-color: var(--edit); padding: 5px 10px; font-size: 0.8em; width: auto; margin: 0; border-radius: 6px; }
         
-        /* Settlement Card */
         .settlement-card { background: #f3e5f5; border-left: 5px solid var(--final); padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px; }
-        .settlement-card p { margin: 5px 0; font-size: 0.9em; font-weight: 500; }
-        .settlement-card b { color: var(--final); }
-
         .person-debt-card { border-left: 5px solid var(--primary); padding: 10px; background: #fafafa; margin-bottom: 15px; border-radius: 0 8px 8px 0; }
         .debt-row { display: flex; justify-content: space-between; padding: 8px 0; font-weight: bold; color: var(--accent); border-bottom: 1px solid #ffebee; }
-        
         .mini-history { font-size: 0.8em; color: #666; margin-top: 5px; background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #f0f0f0; }
         .mini-item { display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 4px 0; }
 
-        .rekap-table { width: 100%; border-collapse: collapse; font-size: 0.82em; }
-        .rekap-table th, .rekap-table td { border-bottom: 1px solid #eee; padding: 10px 4px; text-align: left; vertical-align: top; }
-        .date-badge { font-size: 0.75em; color: #888; display: block; }
-        .edit-info { font-size: 0.7em; color: #ff9800; font-style: italic; display: block; margin-top: 4px; border-top: 1px solid #fff3e0; padding-top: 2px; }
+        .rekap-table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+        .rekap-table th, .rekap-table td { border-bottom: 1px solid #eee; padding: 10px 4px; text-align: left; }
+        .edit-info { font-size: 0.7em; color: var(--edit); display: block; margin-top: 4px; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🇲🇾 Trip Expenses</h2>
+    <h2>🇲🇾 Malaysia Online Pay</h2>
+    <div class="status-sync" id="syncStatus">Memuat data dari server...</div>
 
-    <div class="card" id="inputCard">
+    <div class="card" id="mainForm">
         <h3 id="formTitle">💸 Tambah Transaksi</h3>
         <label>Tanggal</label>
         <input type="date" id="transDate">
         <label>Pembayar</label>
-        <select id="payer"><option value="Njel">Njel</option><option value="Ria">Ria</option><option value="Ira">Ira</option></select>
+        <select id="payer"><option>Njel</option><option>Ria</option><option>Ira</option></select>
+        
         <div class="type-group">
             <div class="radio-box"><input type="radio" name="splitType" id="typeAll" value="all" checked onclick="toggleTarget(false)"> Bagi 3 (Splitbill)</div>
             <div class="radio-box"><input type="radio" name="splitType" id="typeSingle" value="single" onclick="toggleTarget(true)"> Talangin 1 Orang</div>
         </div>
-        <div id="targetPersonDiv" style="display:none;"><label>Untuk Siapa?</label><select id="borrower"><option value="Ria">Ria</option><option value="Njel">Njel</option><option value="Ira">Ira</option></select></div>
+
+        <div id="targetPersonDiv" style="display:none;"><label>Untuk Siapa?</label><select id="borrower"><option>Ria</option><option>Njel</option><option>Ira</option></select></div>
         <input type="number" id="amount" placeholder="Nominal RM" inputmode="decimal">
         <input type="text" id="desc" placeholder="Deskripsi">
-        <button onclick="addExpense()" id="submitBtn">Simpan</button>
+        <button onclick="addExpense()" id="submitBtn">Simpan ke Awan ☁️</button>
         <button onclick="resetForm()" id="cancelBtn" style="display:none; background:#9e9e9e;">Batal</button>
+    </div>
+
+    <div class="card" style="border: 2px solid var(--final);">
+        <h3 style="color: var(--final);">⚖️ Hasil Akhir (Siapa Bayar Siapa)</h3>
+        <div id="finalSettlement"></div>
     </div>
 
     <div class="card">
         <h3>💰 Rincian Hutang</h3>
         <div id="debtSections"></div>
-    </div>
-
-    <div class="card" style="border: 2px solid var(--final);">
-        <h3 style="color: var(--final);">⚖️ Hasil Akhir Bersih</h3>
-        <div id="finalSettlement"></div>
     </div>
 
     <div class="card">
@@ -79,16 +79,51 @@
 </div>
 
 <script>
-    let entries = JSON.parse(localStorage.getItem('tripDataHybridV6')) || [];
+    // === CONFIGURASI JSONBIN ===
+    const API_KEY = '$2a$10$YG69diCHFNVviYoY0Dwo2erVKaxVKfcKL3KMsOimjxRDVsGYpGXAS';
+    const BIN_ID = 'MASUKKAN_BIN_ID_DISINI'; // Ganti dengan Bin ID kamu
+    // ===========================
+
+    let entries = [];
     const names = ["Njel", "Ria", "Ira"];
     let editIndex = -1;
 
-    function getTodayDate() { return new Date().toISOString().split('T')[0]; }
-    function getNowFormatted() { 
-        const now = new Date(); 
-        return now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}); 
+    async function loadData() {
+        try {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': API_KEY }
+            });
+            const data = await res.json();
+            entries = data.record.entries || [];
+            document.getElementById('syncStatus').innerText = "✅ Data Sinkron (Online)";
+            renderAll();
+        } catch (e) {
+            document.getElementById('syncStatus').innerText = "❌ Gagal mengambil data online";
+        }
     }
 
+    async function saveData() {
+        document.getElementById('mainForm').classList.add('loading');
+        document.getElementById('syncStatus').innerText = "⏳ Menyimpan data...";
+        try {
+            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': API_KEY
+                },
+                body: JSON.stringify({ entries: entries })
+            });
+            document.getElementById('syncStatus').innerText = "✅ Tersimpan!";
+            renderAll();
+        } catch (e) {
+            alert("Gagal simpan ke server!");
+        }
+        document.getElementById('mainForm').classList.remove('loading');
+    }
+
+    // Fungsi Logika App
+    function getTodayDate() { return new Date().toISOString().split('T')[0]; }
     document.getElementById('transDate').value = getTodayDate();
     function toggleTarget(show) { document.getElementById('targetPersonDiv').style.display = show ? 'block' : 'none'; }
 
@@ -100,7 +135,7 @@
         const splitType = document.querySelector('input[name="splitType"]:checked').value;
         const borrower = document.getElementById('borrower').value;
 
-        if (!amount || amount <= 0) return alert("Isi nominal!");
+        if (!amount) return alert("Isi nominal!");
 
         const newData = {
             date,
@@ -109,13 +144,13 @@
             borrower: splitType === 'all' ? null : borrower,
             amount,
             desc,
-            lastEdit: editIndex > -1 ? `Edited on ${getNowFormatted()}` : null
+            lastEdit: editIndex > -1 ? `Edited at ${new Date().toLocaleTimeString()}` : null
         };
 
         if (editIndex > -1) entries[editIndex] = newData;
         else entries.push(newData);
 
-        saveAndRender();
+        saveData(); // Kirim ke JSONBin
         resetForm();
     }
 
@@ -129,94 +164,77 @@
         if (item.type === 'SPLIT_ALL') { document.getElementById('typeAll').checked = true; toggleTarget(false); }
         else { document.getElementById('typeSingle').checked = true; toggleTarget(true); document.getElementById('borrower').value = item.borrower; }
         document.getElementById('formTitle').innerText = "✏️ Edit Transaksi";
-        document.getElementById('submitBtn').innerText = "Update";
+        document.getElementById('submitBtn').innerText = "Update & Sinkron";
         document.getElementById('cancelBtn').style.display = "block";
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function resetForm() {
         editIndex = -1;
-        document.getElementById('transDate').value = getTodayDate();
         document.getElementById('amount').value = ''; 
         document.getElementById('desc').value = '';
         document.getElementById('formTitle').innerText = "💸 Tambah Transaksi";
-        document.getElementById('submitBtn').innerText = "Simpan";
+        document.getElementById('submitBtn').innerText = "Simpan ke Awan ☁️";
         document.getElementById('cancelBtn').style.display = "none";
     }
 
-    function saveAndRender() {
-        localStorage.setItem('tripDataHybridV6', JSON.stringify(entries));
-        renderLog();
-        renderDebts();
-    }
-
-    function renderLog() {
+    function renderAll() {
+        // Render History
         const logBody = document.getElementById('logBody');
         logBody.innerHTML = "";
         for (let i = entries.length - 1; i >= 0; i--) {
             const en = entries[i];
-            const displayDate = en.date ? en.date.split('-').reverse().join('/') : '-';
             logBody.innerHTML += `<tr>
-                <td><span class="date-badge">${displayDate}</span><b>${en.desc}</b><br><small>By: ${en.payer}</small>${en.lastEdit ? `<span class="edit-info">⚠️ ${en.lastEdit}</span>` : ''}</td>
+                <td><b>${en.desc}</b><br><small>${en.date} | ${en.payer}</small>${en.lastEdit ? `<span class="edit-info">⚠️ ${en.lastEdit}</span>` : ''}</td>
                 <td>RM ${en.amount.toFixed(2)}</td>
                 <td><button class="btn-edit" onclick="editItem(${i})">Edit</button></td>
             </tr>`;
         }
-    }
 
-    function renderDebts() {
-        const container = document.getElementById('debtSections');
-        const finalContainer = document.getElementById('finalSettlement');
-        container.innerHTML = "";
-        finalContainer.innerHTML = "";
-
-        // Matriks Hutang [Pemberi Utang][Peminjam]
+        // Render Debts & Netting (Sama seperti logika sebelumnya)
         let matrix = { "Njel": { "Ria": 0, "Ira": 0 }, "Ria": { "Njel": 0, "Ira": 0 }, "Ira": { "Njel": 0, "Ria": 0 } };
-        let history = { "Njel": { "Ria": [], "Ira": [] }, "Ria": { "Njel": [], "Ira": [] }, "Ira": { "Njel": [], "Ria": [] } };
-
         entries.forEach(en => {
             if (en.type === 'SPLIT_ALL') {
                 let share = en.amount / 3;
-                names.forEach(name => { if(name !== en.payer) { matrix[en.payer][name] += share; history[name][en.payer].push({d:en.desc, a:share}); } });
+                names.forEach(name => { if(name !== en.payer) matrix[en.payer][name] += share; });
             } else if (en.type === 'SINGLE_DEBT') {
                 matrix[en.payer][en.borrower] += en.amount;
-                history[en.borrower][en.payer].push({d:en.desc, a:en.amount});
             }
         });
 
-        // Tampilkan Rincian
+        // Tampilkan Hasil Akhir Bersih
+        const finalContainer = document.getElementById('finalSettlement');
+        const pairs = [["Njel", "Ria"], ["Njel", "Ira"], ["Ria", "Ira"]];
+        let finalHTML = "";
+        pairs.forEach(pair => {
+            let p1 = pair[0]; let p2 = pair[1];
+            let diff = matrix[p1][p2] - matrix[p2][p1];
+            if (Math.abs(diff) > 0.01) {
+                if (diff > 0) finalHTML += `<div class="settlement-card"><p>👉 <b>${p2}</b> bayar ke <b>${p1}</b>: <b>RM ${diff.toFixed(2)}</b></p></div>`;
+                else finalHTML += `<div class="settlement-card"><p>👉 <b>${p1}</b> bayar ke <b>${p2}</b>: <b>RM ${Math.abs(diff).toFixed(2)}</b></p></div>`;
+            }
+        });
+        finalContainer.innerHTML = finalHTML || "<p>Semua Lunas</p>";
+
+        // Render Rincian Hutang
+        const container = document.getElementById('debtSections');
+        container.innerHTML = "";
         names.forEach(user => {
             let html = `<div class="person-debt-card"><h4>${user} kurang bayar ke:</h4>`;
             let hasDebt = false;
             names.forEach(target => {
                 if (user !== target && matrix[target][user] > 0.01) {
                     hasDebt = true;
-                    html += `<div class="debt-row"><span>Total ke ${target}</span><span>RM ${matrix[target][user].toFixed(2)}</span></div>`;
-                    html += `<div class="mini-history">`;
-                    history[user][target].forEach(item => { html += `<div class="mini-item"><span>${item.d}</span><span>RM ${item.a.toFixed(2)}</span></div>`; });
-                    html += `</div>`;
+                    html += `<div class="debt-row"><span>Ke ${target}</span><span>RM ${matrix[target][user].toFixed(2)}</span></div>`;
                 }
             });
-            if (!hasDebt) html += `<div style="color:#aaa; font-size:0.8em;">Lunas!</div>`;
+            if (!hasDebt) html += `<p style="font-size:0.8em; color:#999">Lunas</p>`;
             container.innerHTML += html + `</div>`;
         });
-
-        // HASIL AKHIR BERSIH (NETTING)
-        const pairs = [["Njel", "Ria"], ["Njel", "Ira"], ["Ria", "Ira"]];
-        let finalHTML = "";
-        pairs.forEach(pair => {
-            let p1 = pair[0]; let p2 = pair[1];
-            let diff = matrix[p1][p2] - matrix[p2][p1]; // Hutang P1 ke P2 dikurang Hutang P2 ke P1
-            if (Math.abs(diff) > 0.01) {
-                if (diff > 0) finalHTML += `<div class="settlement-card"><p>👉 <b>${p2}</b> bayar ke <b>${p1}</b>: <br><strong>RM ${diff.toFixed(2)}</strong></p></div>`;
-                else finalHTML += `<div class="settlement-card"><p>👉 <b>${p1}</b> bayar ke <b>${p2}</b>: <br><strong>RM ${Math.abs(diff).toFixed(2)}</strong></p></div>`;
-            }
-        });
-        finalContainer.innerHTML = finalHTML || "<p style='text-align:center; color:#888;'>Semua sudah lunas seimbang!</p>";
     }
 
-    renderLog(); renderDebts();
+    // Load data saat pertama buka
+    loadData();
 </script>
-
 </body>
 </html>
