@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Malaysia Paylater - Final Detail Log</title>
+    <title>Malaysia Paylater - Full Details</title>
     <style>
         :root { --primary: #008080; --secondary: #f4f4f9; --accent: #ff6b6b; --settle: #4caf50; --edit: #ff9800; --final: #673ab7; }
         body { font-family: -apple-system, sans-serif; background-color: var(--secondary); margin: 0; padding: 15px; color: #333; }
@@ -13,6 +13,7 @@
         label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.85em; }
         select, input, button { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; outline: none; }
         
+        /* Layout Radio Button Rapi */
         .type-group { background: #e0f2f1; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #b2dfdb; }
         .radio-box { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer; }
         .radio-box input[type="radio"] { width: 20px; height: 20px; margin: 0; }
@@ -20,23 +21,28 @@
 
         button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         .btn-edit { background-color: var(--edit); padding: 5px 10px; font-size: 0.8em; width: auto; margin: 0; border-radius: 6px; }
-        .status-sync { font-size: 0.7em; text-align: center; margin-bottom: 10px; color: #666; background: #fff; padding: 8px; border-radius: 20px; border: 1px solid #eee; word-break: break-all; }
+        .status-sync { font-size: 0.7em; text-align: center; margin-bottom: 10px; color: #666; background: #fff; padding: 8px; border-radius: 20px; border: 1px solid #eee; }
         
+        /* Settlement & Debt Cards */
         .settlement-card { background: #f3e5f5; border-left: 5px solid var(--final); padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px; font-size: 0.9em; }
         .person-debt-card { border-left: 5px solid var(--primary); padding: 10px; background: #fafafa; margin-bottom: 15px; border-radius: 0 8px 8px 0; }
         .debt-row { display: flex; justify-content: space-between; padding: 8px 0; font-weight: bold; color: var(--accent); border-bottom: 1px solid #ffebee; }
         
+        /* Rincian Hutang Deskripsi */
+        .mini-history { font-size: 0.8em; color: #666; margin-top: 5px; background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #f0f0f0; }
+        .mini-item { display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 4px 0; }
+        
+        /* History Log Style */
         .rekap-table { width: 100%; border-collapse: collapse; font-size: 0.82em; }
         .rekap-table td { border-bottom: 1px solid #eee; padding: 12px 4px; vertical-align: middle; }
-        .log-detail { color: #888; font-size: 0.85em; margin-top: 2px; display: block; }
-        .badge-type { color: var(--primary); font-weight: bold; }
+        .log-explanation { color: #777; font-size: 0.85em; margin-top: 3px; display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>🇲🇾 Malaysia Paylater</h2>
-    <div class="status-sync" id="syncStatus">Menghubungkan ke server...</div>
+    <div class="status-sync" id="syncStatus">Menghubungkan...</div>
 
     <div class="card" id="mainForm">
         <h3 id="formTitle">💸 Tambah Transaksi</h3>
@@ -63,7 +69,7 @@
         </div>
 
         <div id="targetPersonDiv" style="display:none;">
-            <label>Untuk Siapa?</label>
+            <label>Ditalangin untuk siapa?</label>
             <select id="borrower">
                 <option value="Ria">Ria</option>
                 <option value="Njel">Njel</option>
@@ -190,50 +196,56 @@
     }
 
     function renderAll() {
+        // Render History Log
         const logBody = document.getElementById('logBody');
         logBody.innerHTML = "";
         
         entries.slice().reverse().forEach((en, i) => {
-            // LOGIKA PENJELASAN LOG (Sesuai Permintaan)
-            let explanation = "";
-            if (en.type === 'SPLIT_ALL') {
-                explanation = `Oleh <b>${en.payer}</b> (Bagi rata 3)`;
-            } else {
-                explanation = `Oleh <b>${en.payer}</b> menalangi <b>${en.borrower}</b>`;
-            }
-
+            let explanation = en.type === 'SPLIT_ALL' ? `Oleh <b>${en.payer}</b> (Bagi rata 3)` : `Oleh <b>${en.payer}</b> nalangin <b>${en.borrower}</b>`;
             logBody.innerHTML += `<tr>
                 <td style="width:70%">
                     <b>${en.desc}</b>
-                    <span class="log-detail">${en.date} | ${explanation}</span>
+                    <span class="log-explanation">${en.date} | ${explanation}</span>
                 </td>
                 <td style="width:20%; font-weight:bold;">RM ${en.amount.toFixed(2)}</td>
                 <td style="width:10%"><button class="btn-edit" onclick="editItem(${entries.length - 1 - i})">Edit</button></td>
             </tr>`;
         });
 
-        // Logika Netting (Tidak diubah)
+        // Logika Hitung Hutang
         let matrix = { "Njel": { "Ria": 0, "Ira": 0 }, "Ria": { "Njel": 0, "Ira": 0 }, "Ira": { "Njel": 0, "Ria": 0 } };
+        let history = { "Njel": { "Ria": [], "Ira": [] }, "Ria": { "Njel": [], "Ira": [] }, "Ira": { "Njel": [], "Ria": [] } };
+
         entries.forEach(en => {
             if (en.type === 'SPLIT_ALL') {
                 let share = en.amount / 3;
-                names.forEach(n => { if(n !== en.payer) matrix[en.payer][n] += share; });
+                names.forEach(n => { 
+                    if(n !== en.payer) { 
+                        matrix[en.payer][n] += share; 
+                        history[n][en.payer].push({d: en.desc, a: share}); 
+                    } 
+                });
             } else if (en.type === 'SINGLE_DEBT') {
-                if(en.payer !== en.borrower) matrix[en.payer][en.borrower] += en.amount;
+                if(en.payer !== en.borrower) { 
+                    matrix[en.payer][en.borrower] += en.amount; 
+                    history[en.borrower][en.payer].push({d: en.desc, a: en.amount}); 
+                }
             }
         });
 
+        // Hasil Akhir Netting
         const pairs = [["Njel", "Ria"], ["Njel", "Ira"], ["Ria", "Ira"]];
         let finalHTML = "";
         pairs.forEach(p => {
             let diff = matrix[p[0]][p[1]] - matrix[p[1]][p[0]];
             if (Math.abs(diff) > 0.01) {
                 if (diff > 0) finalHTML += `<div class="settlement-card">👉 <b>${p[1]}</b> bayar ke <b>${p[0]}</b>: <b>RM ${diff.toFixed(2)}</b></div>`;
-                else finalHTML += `<div class="settlement-card">👉 <b>${p[1]}</b> bayar ke <b>${p[0]}</b>: <b>RM ${Math.abs(diff).toFixed(2)}</b></div>`;
+                else finalHTML += `<div class="settlement-card">👉 <b>${p[0]}</b> bayar ke <b>${p[1]}</b>: <b>RM ${Math.abs(diff).toFixed(2)}</b></div>`;
             }
         });
         document.getElementById('finalSettlement').innerHTML = finalHTML || "<p style='text-align:center;color:#888'>Semua Lunas Seimbang</p>";
 
+        // Rincian Hutang Deskripsi per Orang (Fitur yang tidak mau dihapus)
         const container = document.getElementById('debtSections');
         container.innerHTML = "";
         names.forEach(user => {
@@ -243,6 +255,11 @@
                 if (user !== target && matrix[target][user] > 0.01) {
                     hasDebt = true;
                     html += `<div class="debt-row"><span>Ke ${target}</span><span>RM ${matrix[target][user].toFixed(2)}</span></div>`;
+                    html += `<div class="mini-history">`;
+                    history[user][target].forEach(item => { 
+                        html += `<div class="mini-item"><span>${item.d}</span><span>RM ${item.a.toFixed(2)}</span></div>`; 
+                    });
+                    html += `</div>`;
                 }
             });
             container.innerHTML += html + (hasDebt ? "" : "<p style='color:#999;font-size:0.8em'>Lunas</p>") + "</div>";
