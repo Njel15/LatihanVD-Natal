@@ -38,11 +38,11 @@
 <body>
 
 <div class="container">
-    <h2>🇲🇾 Malaysia Expenses</h2>
+    <h2>Malaysia Expenses</h2>
     <div class="status-sync" id="syncStatus">Connecting...</div>
 
     <div class="card" id="mainForm">
-        <h3 id="formTitle">💸 Add Transaction</h3>
+        <h3 id="formTitle">Add Transaction</h3>
         <label>Date</label>
         <input type="date" id="transDate">
         
@@ -75,23 +75,25 @@
         </div>
 
         <input type="number" id="amount" placeholder="0.00" inputmode="decimal">
+
+        <label>Description</label>
         <input type="text" id="desc" placeholder="e.g. Lunch / Grab">
-        <button onclick="addExpense()" id="submitBtn">Save & Sync ☁️</button>
+        <button onclick="addExpense()" id="submitBtn">Save & Sync</button>
         <button onclick="resetForm()" id="cancelBtn" style="display:none; background:#999;">Cancel Edit</button>
     </div>
 
+    <div class="card">
+        <h3>Debt Details</h3>
+        <div id="debtSections"></div>
+    </div>
+
     <div class="card" style="border: 2px solid var(--final);">
-        <h3 style="color: var(--final);">⚖️ Net Settlement</h3>
+        <h3 style="color: var(--final);">Net Settlement</h3>
         <div id="finalSettlement"></div>
     </div>
 
     <div class="card">
-        <h3>💰 Debt Details</h3>
-        <div id="debtSections"></div>
-    </div>
-
-    <div class="card">
-        <h3>📜 Sorted History Log</h3>
+        <h3>History Log</h3>
         <table class="rekap-table">
             <tbody id="logBody"></tbody>
         </table>
@@ -116,22 +118,22 @@
             });
             const data = await res.json();
             entries = data.record.entries || [];
-            document.getElementById('syncStatus').innerText = "☁️ Online | ID: " + BIN_ID;
+            document.getElementById('syncStatus').innerText = "Online | ID: " + BIN_ID;
             renderAll();
         } catch (e) {
-            document.getElementById('syncStatus').innerText = "❌ Sync Error";
+            document.getElementById('syncStatus').innerText = "Sync Error";
         }
     }
 
     async function saveData() {
-        document.getElementById('syncStatus').innerText = "⏳ Syncing...";
+        document.getElementById('syncStatus').innerText = "Syncing...";
         try {
             await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
                 body: JSON.stringify({ entries: entries })
             });
-            document.getElementById('syncStatus').innerText = "✅ Sync Successful";
+            document.getElementById('syncStatus').innerText = "Sync Successful";
             renderAll();
         } catch (e) {
             alert("Failed to sync data.");
@@ -145,7 +147,7 @@
         if (!amount) return alert("Please enter amount!");
 
         const newData = {
-            id: Date.now(), // Unique ID for sorting tie-breaker
+            id: Date.now(),
             date: document.getElementById('transDate').value,
             type: document.querySelector('input[name="splitType"]:checked').value === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT',
             payer: document.getElementById('payer').value,
@@ -155,7 +157,6 @@
         };
 
         if (editIndex > -1) {
-            // Find the original item in the array to update it
             entries[editIndex] = newData;
             editIndex = -1;
         } else {
@@ -187,7 +188,7 @@
             document.getElementById('borrower').value = item.borrower;
         }
 
-        document.getElementById('formTitle').innerText = "✏️ Edit Transaction";
+        document.getElementById('formTitle').innerText = "Edit Transaction";
         document.getElementById('submitBtn').innerText = "Update & Sync";
         document.getElementById('cancelBtn').style.display = "block";
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -197,8 +198,8 @@
         editIndex = -1;
         document.getElementById('amount').value = ''; 
         document.getElementById('desc').value = '';
-        document.getElementById('formTitle').innerText = "💸 Add Transaction";
-        document.getElementById('submitBtn').innerText = "Save & Sync ☁️";
+        document.getElementById('formTitle').innerText = "Add Transaction";
+        document.getElementById('submitBtn').innerText = "Save & Sync";
         document.getElementById('cancelBtn').style.display = "none";
     }
 
@@ -206,8 +207,6 @@
         const logBody = document.getElementById('logBody');
         logBody.innerHTML = "";
         
-        // --- 1. SORT ENTRIES BY DATE (Newest first) ---
-        // Tie-breaker: Newer added IDs come first if dates are identical
         let sortedEntries = [...entries].sort((a, b) => {
             if (b.date !== a.date) return b.date.localeCompare(a.date);
             return b.id - a.id;
@@ -225,7 +224,6 @@
             </tr>`;
         });
 
-        // --- 2. CALCULATE DEBTS ---
         let matrix = { "Njel": { "Ria": 0, "Ira": 0 }, "Ria": { "Njel": 0, "Ira": 0 }, "Ira": { "Njel": 0, "Ria": 0 } };
         let history = { "Njel": { "Ria": [], "Ira": [] }, "Ria": { "Njel": [], "Ira": [] }, "Ira": { "Njel": [], "Ria": [] } };
 
@@ -246,19 +244,17 @@
             }
         });
 
-        // --- 3. RENDER NET SETTLEMENT ---
         const pairs = [["Njel", "Ria"], ["Njel", "Ira"], ["Ria", "Ira"]];
         let finalHTML = "";
         pairs.forEach(p => {
             let diff = matrix[p[0]][p[1]] - matrix[p[1]][p[0]];
             if (Math.abs(diff) > 0.01) {
-                if (diff > 0) finalHTML += `<div class="settlement-card">👉 <b>${p[1]}</b> pays <b>${p[0]}</b>: <b>RM ${diff.toFixed(2)}</b></div>`;
-                else finalHTML += `<div class="settlement-card">👉 <b>${p[0]}</b> pays <b>${p[1]}</b>: <b>RM ${Math.abs(diff).toFixed(2)}</b></div>`;
+                if (diff > 0) finalHTML += `<div class="settlement-card"><p><b>${p[1]}</b> pays <b>${p[0]}</b>: <b>RM ${diff.toFixed(2)}</b></p></div>`;
+                else finalHTML += `<div class="settlement-card"><p><b>${p[0]}</b> pays <b>${p[1]}</b>: <b>RM ${Math.abs(diff).toFixed(2)}</b></p></div>`;
             }
         });
         document.getElementById('finalSettlement').innerHTML = finalHTML || "<p style='text-align:center;color:#888'>All Settled</p>";
 
-        // --- 4. RENDER DEBT DETAILS WITH DATE ---
         const container = document.getElementById('debtSections');
         container.innerHTML = "";
         names.forEach(user => {
@@ -269,7 +265,6 @@
                     hasDebt = true;
                     html += `<div class="debt-row"><span>To ${target}</span><span>RM ${matrix[target][user].toFixed(2)}</span></div>`;
                     html += `<div class="mini-history">`;
-                    // Sorting history by date for clear debt breakdown
                     let sortedHistory = history[user][target].sort((a,b) => b.dt.localeCompare(a.dt));
                     sortedHistory.forEach(item => { 
                         html += `<div class="mini-item">
