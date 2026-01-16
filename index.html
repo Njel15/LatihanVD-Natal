@@ -24,7 +24,7 @@
         .btn-edit { background-color: var(--edit); padding: 5px 10px; font-size: 0.8em; width: auto; margin: 0; border-radius: 6px; }
         .status-sync { font-size: 0.7em; text-align: center; margin-bottom: 10px; color: #666; background: #fff; padding: 8px; border-radius: 20px; border: 1px solid #eee; word-break: break-all; }
         
-        /* HASIL AKHIR & RINCIAN */
+        /* Final Statement */
         .settlement-card { background: #f3e5f5; border-left: 5px solid var(--final); padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px; font-size: 0.9em; }
         .person-debt-card { border-left: 5px solid var(--primary); padding: 10px; background: #fafafa; margin-bottom: 15px; border-radius: 0 8px 8px 0; }
         .debt-row { display: flex; justify-content: space-between; padding: 8px 0; font-weight: bold; color: var(--accent); border-bottom: 1px solid #ffebee; }
@@ -39,14 +39,14 @@
 
 <div class="container">
     <h2>🇲🇾 Malaysia Expenses</h2>
-    <div class="status-sync" id="syncStatus">Menghubungkan ke server...</div>
+    <div class="status-sync" id="syncStatus">Connecting to server...</div>
 
     <div class="card" id="mainForm">
-        <h3 id="formTitle">💸 Tambah Transaksi</h3>
-        <label>Tanggal</label>
+        <h3 id="formTitle">Add Transaction</h3>
+        <label>Date</label>
         <input type="date" id="transDate">
         
-        <label>Pembayar</label>
+        <label>Paid By</label>
         <select id="payer">
             <option value="Njel">Njel</option>
             <option value="Ria">Ria</option>
@@ -54,10 +54,10 @@
         </select>
         
         <div class="type-group">
-            <label style="margin-bottom: 8px; color: var(--primary);">Metode Pembagian:</label>
+            <label style="margin-bottom: 8px; color: var(--primary);">Payment By:</label>
             <div class="radio-box" onclick="document.getElementById('typeAll').click()">
                 <input type="radio" name="splitType" id="typeAll" value="all" checked onclick="toggleTarget(false)">
-                <label for="typeAll">Bagi 3 (Splitbill)</label>
+                <label for="typeAll">Splitbill</label>
             </div>
             <div class="radio-box" onclick="document.getElementById('typeSingle').click()">
                 <input type="radio" name="splitType" id="typeSingle" value="single" onclick="toggleTarget(true)">
@@ -66,7 +66,7 @@
         </div>
 
         <div id="targetPersonDiv" style="display:none;">
-            <label>Untuk Siapa?</label>
+            <label>To : </label>
             <select id="borrower">
                 <option value="Ria">Ria</option>
                 <option value="Njel">Njel</option>
@@ -74,8 +74,8 @@
             </select>
         </div>
 
-        <input type="number" id="amount" placeholder="Nominal RM" inputmode="decimal">
-        <input type="text" id="desc" placeholder="Deskripsi">
+        <input type="number" id="amount" placeholder="Amount in RM" inputmode="decimal">
+        <input type="text" id="desc" placeholder="Note">
         <button onclick="addExpense()" id="submitBtn">Save</button>
         <button onclick="resetForm()" id="cancelBtn" style="display:none; background:#999;">Batal Edit</button>
     </div>
@@ -86,12 +86,12 @@
     </div>
 
     <div class="card">
-        <h3>💰 Rincian Hutang</h3>
+        <h3>Settlement Details</h3>
         <div id="debtSections"></div>
     </div>
 
     <div class="card">
-        <h3>📜 History Log</h3>
+        <h3>History Log</h3>
         <table class="rekap-table">
             <tbody id="logBody"></tbody>
         </table>
@@ -119,7 +119,7 @@
             document.getElementById('syncStatus').innerText = "☁️ Online | ID: " + BIN_ID;
             renderAll();
         } catch (e) {
-            document.getElementById('syncStatus').innerText = "❌ Gagal Sinkron Server";
+            document.getElementById('syncStatus').innerText = "❌ Failed to synchronize with server";
         }
     }
 
@@ -131,7 +131,7 @@
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
                 body: JSON.stringify({ entries: entries })
             });
-            document.getElementById('syncStatus').innerText = "✅ Sinkron Berhasil";
+            document.getElementById('syncStatus').innerText = "✅ Updated";
             renderAll();
         } catch (e) {
             alert("Gagal kirim data ke server.");
