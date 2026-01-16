@@ -124,7 +124,7 @@
     }
 
     async function saveData() {
-        document.getElementById('syncStatus').innerText = "⏳ Sinkronisasi...";
+        document.getElementById('syncStatus').innerText = "⏳ Updating...";
         try {
             await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
@@ -134,7 +134,7 @@
             document.getElementById('syncStatus').innerText = "✅ Updated";
             renderAll();
         } catch (e) {
-            alert("Gagal kirim data ke server.");
+            alert("Fail send data to server.");
         }
     }
 
@@ -178,8 +178,8 @@
             document.getElementById('borrower').value = item.borrower;
         }
 
-        document.getElementById('formTitle').innerText = "✏️ Edit Transaksi";
-        document.getElementById('submitBtn').innerText = "Update & Sinkron";
+        document.getElementById('formTitle').innerText = "✏️ Edit Transaction";
+        document.getElementById('submitBtn').innerText = "Save & Update";
         document.getElementById('cancelBtn').style.display = "block";
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -224,23 +224,23 @@
                 else finalHTML += `<div class="settlement-card">👉 <b>${p[0]}</b> bayar ke <b>${p[1]}</b>: <b>RM ${Math.abs(diff).toFixed(2)}</b></div>`;
             }
         });
-        document.getElementById('finalSettlement').innerHTML = finalHTML || "<p style='text-align:center;color:#888'>Semua Lunas Seimbang</p>";
+        document.getElementById('finalSettlement').innerHTML = finalHTML || "<p style='text-align:center;color:#888'>All Settled</p>";
 
         const container = document.getElementById('debtSections');
         container.innerHTML = "";
         names.forEach(user => {
-            let html = `<div class="person-debt-card"><h4>${user} kurang bayar ke:</h4>`;
+            let html = `<div class="person-debt-card"><h4>${user} needs to pay:</h4>`;
             let hasDebt = false;
             names.forEach(target => {
                 if (user !== target && matrix[target][user] > 0.01) {
                     hasDebt = true;
-                    html += `<div class="debt-row"><span>Total ke ${target}</span><span>RM ${matrix[target][user].toFixed(2)}</span></div>`;
+                    html += `<div class="debt-row"><span>•${target}</span><span>RM ${matrix[target][user].toFixed(2)}</span></div>`;
                     html += `<div class="mini-history">`;
                     history[user][target].forEach(item => { html += `<div class="mini-item"><span>${item.d}</span><span>RM ${item.a.toFixed(2)}</span></div>`; });
                     html += `</div>`;
                 }
             });
-            container.innerHTML += html + (hasDebt ? "" : "<p style='color:#999;font-size:0.8em'>Lunas / Tidak ada hutang</p>") + "</div>";
+            container.innerHTML += html + (hasDebt ? "" : "<p style='color:#999;font-size:0.8em'>All Paid</p>") + "</div>";
         });
     }
 
