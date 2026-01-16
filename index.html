@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Malaysia Expenses - Organized</title>
+    <title>Malaysia Expenses - Bug Fixed</title>
     <style>
         :root { --primary: #008080; --secondary: #f4f4f9; --accent: #ff6b6b; --settle: #4caf50; --edit: #ff9800; --final: #673ab7; }
         body { font-family: -apple-system, sans-serif; background-color: var(--secondary); margin: 0; padding: 15px; color: #333; }
@@ -107,7 +107,7 @@
 
     let entries = [];
     const names = ["Njel", "Ria", "Ira"];
-    let editIndex = -1;
+    let currentEditId = null;
 
     document.getElementById('transDate').value = new Date().toISOString().split('T')[0];
 
@@ -147,7 +147,7 @@
         if (!amount) return alert("Please enter amount!");
 
         const newData = {
-            id: Date.now(),
+            id: currentEditId || Date.now(),
             date: document.getElementById('transDate').value,
             type: document.querySelector('input[name="splitType"]:checked').value === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT',
             payer: document.getElementById('payer').value,
@@ -156,9 +156,9 @@
             desc: document.getElementById('desc').value || "Expense"
         };
 
-        if (editIndex > -1) {
-            entries[editIndex] = newData;
-            editIndex = -1;
+        if (currentEditId) {
+            const index = entries.findIndex(item => item.id === currentEditId);
+            if (index !== -1) entries[index] = newData;
         } else {
             entries.push(newData);
         }
@@ -168,11 +168,10 @@
     }
 
     function editItem(id) {
-        const index = entries.findIndex(item => item.id === id);
-        if (index === -1) return;
+        const item = entries.find(item => item.id === id);
+        if (!item) return;
 
-        const item = entries[index];
-        editIndex = index;
+        currentEditId = id;
         
         document.getElementById('amount').value = item.amount;
         document.getElementById('desc').value = item.desc;
@@ -195,7 +194,7 @@
     }
 
     function resetForm() {
-        editIndex = -1;
+        currentEditId = null;
         document.getElementById('amount').value = ''; 
         document.getElementById('desc').value = '';
         document.getElementById('formTitle').innerText = "Add Transaction";
@@ -207,6 +206,7 @@
         const logBody = document.getElementById('logBody');
         logBody.innerHTML = "";
         
+        // Sorting untuk tampilan log (tidak mengubah data asli di 'entries')
         let sortedEntries = [...entries].sort((a, b) => {
             if (b.date !== a.date) return b.date.localeCompare(a.date);
             return b.id - a.id;
