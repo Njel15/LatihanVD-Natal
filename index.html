@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trip Malaysia - Hybrid with Edit</title>
+    <title>Trip Malaysia - Expense Tracker</title>
     <style>
         :root { --primary: #008080; --secondary: #f4f4f9; --accent: #ff6b6b; --settle: #4caf50; --edit: #ff9800; }
         body { font-family: -apple-system, sans-serif; background-color: var(--secondary); margin: 0; padding: 15px; color: #333; }
@@ -17,37 +17,31 @@
         .radio-box { display: flex; gap: 15px; align-items: center; padding: 5px 0; }
         .radio-box input { width: auto; margin: 0; }
         
-        button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:active { opacity: 0.7; }
-        .btn-settle { background-color: var(--settle); }
+        button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        .btn-edit { background-color: var(--edit); padding: 5px 10px; font-size: 0.8em; width: auto; margin: 0; border-radius: 6px; }
         
-        /* Person Debt Cards */
         .person-debt-card { border-left: 5px solid var(--primary); padding: 10px; background: #fafafa; margin-bottom: 15px; border-radius: 0 8px 8px 0; }
-        .person-debt-card h4 { margin: 0 0 10px 0; color: #444; border-bottom: 1px solid #eee; padding-bottom: 5px; }
         .debt-row { display: flex; justify-content: space-between; padding: 5px 0; font-weight: bold; color: var(--accent); }
-
         .mini-history { font-size: 0.8em; color: #666; margin-top: 5px; background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #f0f0f0; }
         .mini-item { display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 4px 0; }
-        .text-green { color: #2e7d32; font-weight: bold; }
 
-        /* History Table & Edit Button */
         .rekap-table { width: 100%; border-collapse: collapse; font-size: 0.82em; }
-        .rekap-table th, .rekap-table td { border-bottom: 1px solid #eee; padding: 10px 4px; text-align: left; }
-        .btn-edit { background-color: var(--edit); padding: 4px 8px; font-size: 0.8em; width: auto; margin: 0; }
-        .clear-btn { background-color: #f44336; margin-top: 20px; padding: 8px; font-size: 0.8em; opacity: 0.6; }
-        
-        /* Animasi Highlight saat edit */
-        @keyframes highlight { from { background: #fff9c4; } to { background: white; } }
-        .highlight-edit { animation: highlight 2s; }
+        .rekap-table th, .rekap-table td { border-bottom: 1px solid #eee; padding: 10px 4px; text-align: left; vertical-align: top; }
+        .date-badge { font-size: 0.75em; color: #888; display: block; }
+        .edit-info { font-size: 0.7em; color: #ff9800; font-style: italic; display: block; margin-top: 4px; border-top: 1px solid #fff3e0; padding-top: 2px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 id="top">🇲🇾 Trip Expenses</h2>
+    <h2>🇲🇾 Trip Expenses</h2>
 
     <div class="card" id="inputCard">
         <h3 id="formTitle">💸 Tambah Transaksi</h3>
+        
+        <label>Tanggal Transaksi</label>
+        <input type="date" id="transDate">
+
         <label>Siapa yang bayar?</label>
         <select id="payer">
             <option value="Njel">Njel</option>
@@ -91,25 +85,36 @@
 
     <div class="card">
         <h3>📜 History Log</h3>
-        <p style="font-size: 0.7em; color: #888; margin-top: -10px;">Klik Edit untuk memperbaiki data salah.</p>
         <table class="rekap-table">
-            <thead><tr><th>Desc</th><th>Total</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Item & Info</th><th>Total</th><th>Aksi</th></tr></thead>
             <tbody id="logBody"></tbody>
         </table>
-        <button class="clear-btn" onclick="clearData()">Hapus Semua Data</button>
     </div>
 </div>
 
 <script>
-    let entries = JSON.parse(localStorage.getItem('tripDataHybridV2')) || [];
+    let entries = JSON.parse(localStorage.getItem('tripDataHybridV4')) || [];
     const names = ["Njel", "Ria", "Ira"];
     let editIndex = -1;
+
+    function getTodayDate() {
+        const today = new Date();
+        return today.toISOString().split('T')[0];
+    }
+
+    function getNowFormatted() {
+        const now = new Date();
+        return now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+    }
+
+    document.getElementById('transDate').value = getTodayDate();
 
     function toggleTarget(show) {
         document.getElementById('targetPersonDiv').style.display = show ? 'block' : 'none';
     }
 
     function addExpense() {
+        const date = document.getElementById('transDate').value;
         const payer = document.getElementById('payer').value;
         const amount = parseFloat(document.getElementById('amount').value);
         const desc = document.getElementById('desc').value || "Belanja";
@@ -119,16 +124,17 @@
         if (!amount || amount <= 0) return alert("Isi nominal!");
 
         const newData = {
+            date,
             type: splitType === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT',
             payer,
             borrower: splitType === 'all' ? null : borrower,
             amount,
-            desc
+            desc,
+            lastEdit: editIndex > -1 ? `Edited on ${getNowFormatted()}` : null
         };
 
         if (editIndex > -1) {
             entries[editIndex] = newData;
-            editIndex = -1;
         } else {
             entries.push(newData);
         }
@@ -141,7 +147,7 @@
         const item = entries[index];
         editIndex = index;
         
-        // Isi form dengan data lama
+        document.getElementById('transDate').value = item.date;
         document.getElementById('payer').value = item.payer;
         document.getElementById('amount').value = item.amount;
         document.getElementById('desc').value = item.desc;
@@ -155,28 +161,24 @@
             document.getElementById('borrower').value = item.borrower;
         }
 
-        // Ubah tampilan tombol
         document.getElementById('formTitle').innerText = "✏️ Edit Transaksi";
         document.getElementById('submitBtn').innerText = "Update Data";
         document.getElementById('cancelBtn').style.display = "block";
-        document.getElementById('inputCard').classList.add('highlight-edit');
-        
-        // Scroll ke atas otomatis
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function resetForm() {
         editIndex = -1;
+        document.getElementById('transDate').value = getTodayDate();
         document.getElementById('amount').value = ''; 
         document.getElementById('desc').value = '';
         document.getElementById('formTitle').innerText = "💸 Tambah Transaksi";
         document.getElementById('submitBtn').innerText = "Simpan Transaksi";
         document.getElementById('cancelBtn').style.display = "none";
-        document.getElementById('inputCard').classList.remove('highlight-edit');
     }
 
     function saveAndRender() {
-        localStorage.setItem('tripDataHybridV2', JSON.stringify(entries));
+        localStorage.setItem('tripDataHybridV4', JSON.stringify(entries));
         renderLog();
         renderDebts();
     }
@@ -184,11 +186,17 @@
     function renderLog() {
         const logBody = document.getElementById('logBody');
         logBody.innerHTML = "";
-        // Kita tampilkan dari yang terbaru, tapi index tetap pakai index asli array
         for (let i = entries.length - 1; i >= 0; i--) {
             const en = entries[i];
+            const displayDate = en.date ? en.date.split('-').reverse().join('/') : '-';
+            const editLabel = en.lastEdit ? `<span class="edit-info">⚠️ ${en.lastEdit}</span>` : '';
+            
             logBody.innerHTML += `<tr>
-                <td>${en.desc}<br><small style="color:#999">${en.payer}</small></td>
+                <td>
+                    <span class="date-badge">${displayDate}</span>
+                    <b>${en.desc}</b><br><small>By: ${en.payer}</small>
+                    ${editLabel}
+                </td>
                 <td>RM ${en.amount.toFixed(2)}</td>
                 <td><button class="btn-edit" onclick="editItem(${i})">Edit</button></td>
             </tr>`;
@@ -209,12 +217,12 @@
                     let share = en.amount / 3;
                     if (en.payer !== user) {
                         userDebts[en.payer] += share;
-                        historyForUser[en.payer].push({ desc: "(S) " + en.desc, amt: share });
+                        historyForUser[en.payer].push({ desc: en.desc, amt: share });
                     }
                 } else if (en.type === 'SINGLE_DEBT') {
                     if (en.borrower === user) {
                         userDebts[en.payer] += en.amount;
-                        historyForUser[en.payer].push({ desc: "(P) " + en.desc, amt: en.amount });
+                        historyForUser[en.payer].push({ desc: en.desc, amt: en.amount });
                     }
                 }
             });
@@ -238,7 +246,7 @@
         });
     }
 
-    function clearData() { if(confirm("Hapus semua?")) { entries = []; saveAndRender(); } }
+    // Jalankan render saat pertama kali dibuka
     renderLog(); renderDebts();
 </script>
 
