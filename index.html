@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Malaysia Expenses - Audit Log Version</title>
+    <title>Malaysia Expenses - Final Settlement Format</title>
     <style>
         :root { --primary: #008080; --secondary: #f4f4f9; --accent: #ff6b6b; --settle: #4caf50; --edit: #ff9800; --final: #673ab7; }
         body { font-family: -apple-system, sans-serif; background-color: var(--secondary); margin: 0; padding: 15px; color: #333; }
@@ -19,22 +19,22 @@
         
         button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
         button:disabled { background-color: #ccc; }
-        
         .btn-edit { background-color: var(--edit); padding: 5px 12px; font-size: 0.8em; width: auto; margin: 0; border-radius: 6px; }
         
         .status-sync { font-size: 0.7em; text-align: center; margin-bottom: 10px; color: #666; background: #fff; padding: 8px; border-radius: 20px; border: 1px solid #eee; }
-        .settlement-card { background: #f3e5f5; border-left: 5px solid var(--final); padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px; font-size: 0.9em; }
+        
+        /* SETTLEMENT CARD STYLING */
+        .settlement-card { background: #f3e5f5; border-left: 5px solid var(--final); padding: 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px; font-size: 0.9em; line-height: 1.5; }
+        .idr-calc { color: #673ab7; font-weight: bold; display: block; margin-top: 4px; font-size: 0.95em; }
+
         .person-debt-card { border-left: 5px solid var(--primary); padding: 10px; background: #fafafa; margin-bottom: 15px; border-radius: 0 8px 8px 0; }
         .debt-row { display: flex; justify-content: space-between; padding: 8px 0; font-weight: bold; color: var(--accent); border-bottom: 1px solid #ffebee; }
-        
         .mini-history { font-size: 0.8em; color: #666; margin-top: 5px; background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #f0f0f0; }
         .mini-item { display: flex; justify-content: space-between; border-bottom: 1px dotted #eee; padding: 4px 0; }
         .mini-date { font-size: 0.8em; color: #aaa; margin-right: 5px; }
         
         .rekap-table { width: 100%; border-collapse: collapse; font-size: 0.82em; }
         .rekap-table td { border-bottom: 1px solid #eee; padding: 12px 4px; vertical-align: middle; }
-        
-        /* Revision Log Style */
         .revision-container { margin-top: 5px; padding-left: 5px; border-left: 2px solid #ddd; }
         .revision-tag { display: block; font-size: 0.7em; color: #999; line-height: 1.2; font-style: italic; }
     </style>
@@ -43,7 +43,7 @@
 
 <div class="container">
     <h2>Malaysia Expenses</h2>
-    <div class="status-sync" id="syncStatus">Initializing...</div>
+    <div class="status-sync" id="syncStatus">Connecting...</div>
 
     <div class="card" id="mainForm">
         <h3 id="formTitle">Add Transaction</h3>
@@ -68,7 +68,7 @@
     </div>
 
     <div class="card" style="border: 2px solid var(--final);">
-        <h3>Net Settlement</h3>
+        <h3>Net Settlement (Rate: Rp 4,200)</h3>
         <div id="finalSettlement"></div>
     </div>
 
@@ -82,6 +82,7 @@
     const MASTER_KEY = '$2a$10$YG69diCHFNVviYoY0Dwo2erVKaxVKfcKL3KMsOimjxRDVsGYpGXAS';
     const ACCESS_KEY = '$2a$10$tHA/hgIyFzUrzMcYn4HmKewPq9Y05aLHIE0g5PKkMWiVNnsae.X1u';
     const BIN_ID = '6969dbb943b1c97be933fdb7'; 
+    const IDR_RATE = 4200;
 
     let entries = [];
     const names = ["Njel", "Ria", "Ira"];
@@ -98,149 +99,74 @@
             entries = data.record.entries || [];
             document.getElementById('syncStatus').innerText = "Online | Sync OK";
             renderAll();
-        } catch (e) {
-            document.getElementById('syncStatus').innerText = "Sync Error - Check Internet";
-        }
+        } catch (e) { document.getElementById('syncStatus').innerText = "Sync Error"; }
     }
 
     async function saveData() {
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        document.getElementById('syncStatus').innerText = "Updating Server...";
-        
+        const btn = document.getElementById('submitBtn'); btn.disabled = true;
+        document.getElementById('syncStatus').innerText = "Updating...";
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+            await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
                 body: JSON.stringify({ entries: entries })
             });
-            if(res.ok) {
-                document.getElementById('syncStatus').innerText = "Success! Data Updated";
-                renderAll();
-            }
-        } catch (e) {
-            alert("Failed to save. Try again.");
-        } finally {
-            btn.disabled = false;
-        }
+            document.getElementById('syncStatus').innerText = "Success!";
+            renderAll();
+        } catch (e) { alert("Error saving"); }
+        finally { btn.disabled = false; }
     }
 
     function toggleTarget(show) { document.getElementById('targetPersonDiv').style.display = show ? 'block' : 'none'; }
 
     function getNowFormatted() {
         const now = new Date();
-        const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
-        const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-        return `${date} ${time}`;
+        return `${now.toLocaleDateString('en-GB', {day:'2-digit', month:'2-digit'})} ${now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})}`;
     }
 
     function addExpense() {
         const amountValue = document.getElementById('amount').value;
-        if (!amountValue || parseFloat(amountValue) <= 0) return alert("Enter valid amount!");
-
-        const editTimestamp = getNowFormatted();
+        if (!amountValue || parseFloat(amountValue) <= 0) return alert("Invalid amount");
 
         if (currentEditId) {
             const index = entries.findIndex(item => item.id === currentEditId);
             if (index !== -1) {
-                // Keep the old revisions and add a new one
-                const oldRevisions = entries[index].revisions || [];
-                const updatedRevisions = [...oldRevisions, `Edited: ${editTimestamp}`];
-                
-                entries[index] = {
-                    ...entries[index],
-                    date: document.getElementById('transDate').value,
-                    type: document.querySelector('input[name="splitType"]:checked').value === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT',
-                    payer: document.getElementById('payer').value,
-                    borrower: document.getElementById('borrower').value,
-                    amount: parseFloat(amountValue),
-                    desc: document.getElementById('desc').value || "Expense",
-                    revisions: updatedRevisions
-                };
+                const updatedRevisions = [...(entries[index].revisions || []), `Edited: ${getNowFormatted()}`];
+                entries[index] = { ...entries[index], date: document.getElementById('transDate').value, payer: document.getElementById('payer').value, borrower: document.getElementById('borrower').value, amount: parseFloat(amountValue), desc: document.getElementById('desc').value, type: document.querySelector('input[name="splitType"]:checked').value === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT', revisions: updatedRevisions };
             }
         } else {
-            const newEntry = {
-                id: Date.now(),
-                date: document.getElementById('transDate').value,
-                type: document.querySelector('input[name="splitType"]:checked').value === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT',
-                payer: document.getElementById('payer').value,
-                borrower: document.getElementById('borrower').value,
-                amount: parseFloat(amountValue),
-                desc: document.getElementById('desc').value || "Expense",
-                revisions: [] // New entries start with no revisions
-            };
-            entries.push(newEntry);
+            entries.push({ id: Date.now(), date: document.getElementById('transDate').value, payer: document.getElementById('payer').value, borrower: document.getElementById('borrower').value, amount: parseFloat(amountValue), desc: document.getElementById('desc').value, type: document.querySelector('input[name="splitType"]:checked').value === 'all' ? 'SPLIT_ALL' : 'SINGLE_DEBT', revisions: [] });
         }
-
-        saveData();
-        resetForm();
+        saveData(); resetForm();
     }
 
     function editItem(id) {
-        const item = entries.find(item => item.id === id);
-        if (!item) return;
-
-        currentEditId = id;
-        document.getElementById('amount').value = item.amount;
-        document.getElementById('desc').value = item.desc;
-        document.getElementById('transDate').value = item.date;
+        const item = entries.find(item => item.id === id); if (!item) return;
+        currentEditId = id; document.getElementById('amount').value = item.amount;
+        document.getElementById('desc').value = item.desc; document.getElementById('transDate').value = item.date;
         document.getElementById('payer').value = item.payer;
-        
-        if (item.type === 'SPLIT_ALL') {
-            document.getElementById('typeAll').checked = true;
-            toggleTarget(false);
-        } else {
-            document.getElementById('typeSingle').checked = true;
-            toggleTarget(true);
-            document.getElementById('borrower').value = item.borrower;
-        }
-
-        document.getElementById('formTitle').innerText = "Edit Transaction";
-        document.getElementById('submitBtn').innerText = "Update Now";
-        document.getElementById('cancelBtn').style.display = "block";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (item.type === 'SPLIT_ALL') { document.getElementById('typeAll').checked = true; toggleTarget(false); }
+        else { document.getElementById('typeSingle').checked = true; toggleTarget(true); document.getElementById('borrower').value = item.borrower; }
+        document.getElementById('formTitle').innerText = "Edit Transaction"; document.getElementById('submitBtn').innerText = "Update Now";
+        document.getElementById('cancelBtn').style.display = "block"; window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function resetForm() {
-        currentEditId = null;
-        document.getElementById('amount').value = ''; 
-        document.getElementById('desc').value = '';
-        document.getElementById('formTitle').innerText = "Add Transaction";
-        document.getElementById('submitBtn').innerText = "Save & Sync";
-        document.getElementById('cancelBtn').style.display = "none";
-        document.getElementById('transDate').value = new Date().toISOString().split('T')[0];
+        currentEditId = null; document.getElementById('amount').value = ''; document.getElementById('desc').value = '';
+        document.getElementById('formTitle').innerText = "Add Transaction"; document.getElementById('submitBtn').innerText = "Save & Sync";
+        document.getElementById('cancelBtn').style.display = "none"; document.getElementById('transDate').value = new Date().toISOString().split('T')[0];
     }
 
-    function renderAll() {
-        const logBody = document.getElementById('logBody');
-        logBody.innerHTML = "";
-        let sorted = [...entries].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
-        
-        sorted.forEach(en => {
-            const info = en.type === 'SPLIT_ALL' ? `By ${en.payer} (Split 3)` : `By ${en.payer} for ${en.borrower}`;
-            
-            // Generate revision HTML
-            let revisionHTML = '';
-            if (en.revisions && en.revisions.length > 0) {
-                revisionHTML = '<div class="revision-container">';
-                en.revisions.forEach(rev => {
-                    revisionHTML += `<span class="revision-tag">${rev}</span>`;
-                });
-                revisionHTML += '</div>';
-            }
+    function formatIDR(val) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val); }
 
-            logBody.innerHTML += `<tr>
-                <td style="width:70%">
-                    <b>${en.desc}</b><br>
-                    <small>${en.date} | ${info}</small>
-                    ${revisionHTML}
-                </td>
-                <td style="width:20%; font-weight:bold;">RM ${en.amount.toFixed(2)}</td>
-                <td style="width:10%"><button class="btn-edit" onclick="editItem(${en.id})">Edit</button></td>
-            </tr>`;
+    function renderAll() {
+        const logBody = document.getElementById('logBody'); logBody.innerHTML = "";
+        let sorted = [...entries].sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+        sorted.forEach(en => {
+            let revHTML = (en.revisions || []).map(r => `<span class="revision-tag">${r}</span>`).join('');
+            logBody.innerHTML += `<tr><td style="width:70%"><b>${en.desc}</b><br><small>${en.date} | By ${en.payer}</small><div class="revision-container">${revHTML}</div></td><td style="width:20%; font-weight:bold;">RM ${en.amount.toFixed(2)}</td><td style="width:10%"><button class="btn-edit" onclick="editItem(${en.id})">Edit</button></td></tr>`;
         });
 
-        // Calculations (Matrix & Netting)
         let matrix = { "Njel": { "Ria": 0, "Ira": 0 }, "Ria": { "Njel": 0, "Ira": 0 }, "Ira": { "Njel": 0, "Ria": 0 } };
         let history = { "Njel": { "Ria": [], "Ira": [] }, "Ria": { "Njel": [], "Ira": [] }, "Ira": { "Njel": [], "Ria": [] } };
 
@@ -248,14 +174,10 @@
             if (en.type === 'SPLIT_ALL') {
                 let share = en.amount / 3;
                 names.forEach(n => { if(n !== en.payer) { matrix[en.payer][n] += share; history[n][en.payer].push({d: en.desc, a: share, dt: en.date}); } });
-            } else {
-                if(en.payer !== en.borrower) { matrix[en.payer][en.borrower] += en.amount; history[en.borrower][en.payer].push({d: en.desc, a: en.amount, dt: en.date}); }
-            }
+            } else if(en.payer !== en.borrower) { matrix[en.payer][en.borrower] += en.amount; history[en.borrower][en.payer].push({d: en.desc, a: en.amount, dt: en.date}); }
         });
 
-        // Render Debt Sections
-        const container = document.getElementById('debtSections');
-        container.innerHTML = "";
+        const container = document.getElementById('debtSections'); container.innerHTML = "";
         names.forEach(user => {
             let html = `<div class="person-debt-card"><h4>${user} owes to:</h4>`;
             let hasDebt = false;
@@ -266,25 +188,32 @@
                     history[user][target].sort((a,b) => b.dt.localeCompare(a.dt)).forEach(item => {
                         html += `<div class="mini-item"><span><span class="mini-date">${item.dt.split('-')[2]}/${item.dt.split('-')[1]}</span> ${item.d}</span><span>RM ${item.a.toFixed(2)}</span></div>`;
                     });
-                    html += `</div>`;
+                    html += '</div>';
                 }
             });
-            container.innerHTML += html + (hasDebt ? "" : "<p style='color:#999;font-size:0.8em'>Clear / No debts</p>") + "</div>";
+            container.innerHTML += html + (hasDebt ? "" : "<p style='color:#999;font-size:0.8em'>No debts</p>") + "</div>";
         });
 
-        // Render Net Settlement
         const pairs = [["Njel", "Ria"], ["Njel", "Ira"], ["Ria", "Ira"]];
         let finalHTML = "";
         pairs.forEach(p => {
             let diff = matrix[p[0]][p[1]] - matrix[p[1]][p[0]];
             if (Math.abs(diff) > 0.01) {
-                if (diff > 0) finalHTML += `<div class="settlement-card"><b>${p[1]}</b> pays <b>${p[0]}</b>: <b>RM ${diff.toFixed(2)}</b></div>`;
-                else finalHTML += `<div class="settlement-card"><b>${p[0]}</b> pays <b>${p[1]}</b>: <b>RM ${Math.abs(diff).toFixed(2)}</b></div>`;
+                let rm = Math.abs(diff); let idr = rm * IDR_RATE;
+                let payer = diff > 0 ? p[1] : p[0]; let receiver = diff > 0 ? p[0] : p[1];
+                
+                // FORMAT SESUAI PERMINTAAN: RM 100 x Rp 4200 = Rp 420.000,-
+                finalHTML += `
+                    <div class="settlement-card">
+                        <b>${payer}</b> pays <b>${receiver}</b>:
+                        <span class="idr-calc">
+                            RM ${rm.toFixed(2)} x Rp ${IDR_RATE} = ${formatIDR(idr)},-
+                        </span>
+                    </div>`;
             }
         });
         document.getElementById('finalSettlement').innerHTML = finalHTML || "<p style='text-align:center;color:#888'>All Settled</p>";
     }
-
     loadData();
 </script>
 </body>
